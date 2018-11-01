@@ -1,6 +1,9 @@
 package reactor.ipc.aeron.demo;
 
+import java.time.Duration;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.ipc.aeron.AeronUtils;
 import reactor.ipc.aeron.client.AeronClient;
 
 public class ClientServerSends {
@@ -22,7 +25,20 @@ public class ClientServerSends {
         .newHandler(
             (inbound, outbound) -> {
               System.out.println("Handler invoked");
-              inbound.receive().asString().log("receive").subscribe();
+              inbound.receive().asString().log("client receive -> ")
+                  .doOnError(Throwable::printStackTrace)
+                  .subscribe();
+
+
+              outbound
+                  .send(
+                      Flux.range(1, 10000)
+                          .delayElements(Duration.ofSeconds(3))
+                          .map(i -> AeronUtils.stringToByteBuffer("" + i))
+                          .log("client send -> "))
+                  .then()
+                  .subscribe();
+
               return Mono.never();
             })
         .block();

@@ -71,10 +71,15 @@ final class AeronWriteSequencer extends WriteSequencer<ByteBuffer> {
 
       cancel();
 
-      promise.error(
-          new Exception(
-              "Failed to publish signal into session with Id: " + sessionId + ", result: " + result,
-              cause));
+      try{
+
+        promise.error(
+            new Exception(
+                "Failed to publish signal into session with Id: " + sessionId + ", result: " + result,
+                cause));
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
 
       scheduleNextPublisherDrain();
     }

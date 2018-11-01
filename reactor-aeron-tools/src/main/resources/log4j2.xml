@@ -12,7 +12,7 @@
   </Appenders>
 
   <Loggers>
-    <AsyncRoot level="${env:logLevel:-info}">
+    <AsyncRoot level="${env:logLevel:-debug}">
       <AppenderRef ref="STDOUT"/>
     </AsyncRoot>
   </Loggers>

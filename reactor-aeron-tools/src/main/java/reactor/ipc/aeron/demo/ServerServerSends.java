@@ -23,12 +23,14 @@ public class ServerServerSends {
     server
         .newHandler(
             (inbound, outbound) -> {
+              inbound.receive().asString().log("server receive -> ").subscribe();
+
               outbound
                   .send(
                       Flux.range(1, 10000)
                           .delayElements(Duration.ofMillis(250))
                           .map(i -> AeronUtils.stringToByteBuffer("" + i))
-                          .log("send"))
+                          .log("server send -> "))
                   .then()
                   .subscribe();
               return Mono.never();
