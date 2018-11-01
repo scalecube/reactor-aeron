@@ -32,3 +32,6 @@
 
 # JVM crash logs
 hs_err_pid*.log
+
+*.logbuffer
+*.dat
