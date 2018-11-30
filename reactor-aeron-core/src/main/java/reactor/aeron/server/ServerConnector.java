@@ -69,6 +69,7 @@ public class ServerConnector implements Disposable {
             Protocol.createConnectAckBody(connectRequestId, serverSessionStreamId),
             sessionId)
         .retryBackoff(retryCount, Duration.ofMillis(retryMillis), Duration.ofMillis(retryMillis))
+        .timeout(Duration.ofMillis(timeoutMillis))
         .doOnSuccess(
             avoid ->
                 logger.debug("[{}] Sent {} to {}", category, MessageType.CONNECT_ACK, category))
