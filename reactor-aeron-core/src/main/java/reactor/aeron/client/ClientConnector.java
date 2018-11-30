@@ -2,11 +2,11 @@ package reactor.aeron.client;
 
 import com.fasterxml.uuid.Generators;
 import com.fasterxml.uuid.impl.TimeBasedGenerator;
+import io.aeron.Publication;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 import reactor.aeron.AeronResources;
-import reactor.aeron.AeronUtils;
 import reactor.aeron.DefaultMessagePublication;
 import reactor.aeron.MessagePublication;
 import reactor.aeron.MessageType;
@@ -35,7 +35,7 @@ final class ClientConnector implements Disposable {
 
   private final int clientSessionStreamId;
 
-  private final io.aeron.Publication serverControlPublication;
+  private final MessagePublication controlMessagePublication;
 
   private final AeronResources aeronResources;
 
@@ -55,13 +55,17 @@ final class ClientConnector implements Disposable {
     this.clientControlStreamId = clientControlStreamId;
     this.clientSessionStreamId = clientSessionStreamId;
     this.connectRequestId = uuidGenerator.generate();
-    this.serverControlPublication =
+
+    Publication controlPublication =
         aeronResources.publication(
             category,
             options.serverChannel(),
             options.serverStreamId(),
             "to send control requests to server",
             0);
+    this.controlMessagePublication =
+        new DefaultMessagePublication(
+            aeronResources.eventLoop(), controlPublication, category, options);
   }
 
   Mono<ClientControlMessageSubscriber.ConnectAckResponse> connect() {
@@ -90,7 +94,7 @@ final class ClientConnector implements Disposable {
                 logger.debug(
                     "[{}] Successfully connected to server at {}, sessionId: {}",
                     category,
-                    AeronUtils.format(serverControlPublication),
+                    controlMessagePublication,
                     sessionId);
               }
             })
@@ -98,9 +102,7 @@ final class ClientConnector implements Disposable {
         .onErrorMap(
             th -> {
               throw new RuntimeException(
-                  String.format(
-                      "Failed to connect to server at %s",
-                      AeronUtils.format(serverControlPublication)));
+                  String.format("Failed to connect to server at %s", controlMessagePublication));
             });
   }
 
@@ -116,8 +118,7 @@ final class ClientConnector implements Disposable {
 
   private void logConnect() {
     if (logger.isDebugEnabled()) {
-      logger.debug(
-          "[{}] Connecting to server at {}", category, AeronUtils.format(serverControlPublication));
+      logger.debug("[{}] Connecting to server at {}", category, controlMessagePublication);
     }
   }
 
@@ -128,33 +129,12 @@ final class ClientConnector implements Disposable {
 
   private void logDisconnect() {
     if (logger.isDebugEnabled()) {
-      logger.debug(
-          "[{}] Disconnecting from server at {}",
-          category,
-          AeronUtils.format(serverControlPublication));
+      logger.debug("[{}] Disconnecting from server at {}", category, controlMessagePublication);
     }
   }
 
   private Mono<Void> send(ByteBuffer buffer, MessageType msgType) {
-    return Mono.create(
-        sink -> {
-          Exception cause = null;
-          try {
-            MessagePublication messagePublication =
-                new DefaultMessagePublication(
-                    aeronResources.eventLoop(), serverControlPublication, category, options);
-
-            long result = messagePublication.enqueue(msgType, buffer, sessionId);
-            if (result > 0) {
-              logger.debug("[{}] Sent {} to {}", category, msgType, messagePublication.toString());
-              sink.success();
-              return;
-            }
-          } catch (Exception ex) {
-            cause = ex;
-          }
-          sink.error(new RuntimeException("Failed to send message of type: " + msgType, cause));
-        });
+    return controlMessagePublication.enqueue(msgType, buffer, sessionId);
   }
 
   @Override
@@ -165,6 +145,6 @@ final class ClientConnector implements Disposable {
             th -> {
               // no-op
             });
-    aeronResources.close(serverControlPublication);
+    controlMessagePublication.close();
   }
 }
