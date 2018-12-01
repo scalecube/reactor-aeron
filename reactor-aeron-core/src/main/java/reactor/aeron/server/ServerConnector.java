@@ -58,29 +58,34 @@ public class ServerConnector implements Disposable {
   }
 
   Mono<Void> connect() {
-    long retryMillis = 100;
-    long timeoutMillis =
-        options.connectTimeoutMillis() + options.controlBackpressureTimeoutMillis();
-    long retryCount = timeoutMillis / retryMillis;
+    return Mono.defer(
+        () -> {
+          long retryMillis = 100;
+          long timeoutMillis =
+              options.connectTimeoutMillis() + options.controlBackpressureTimeoutMillis();
+          long retryCount = timeoutMillis / retryMillis;
 
-    return controlMessagePublication
-        .enqueue(
-            MessageType.CONNECT_ACK,
-            Protocol.createConnectAckBody(connectRequestId, serverSessionStreamId),
-            sessionId)
-        .retryBackoff(retryCount, Duration.ofMillis(retryMillis), Duration.ofMillis(retryMillis))
-        .timeout(Duration.ofMillis(timeoutMillis))
-        .doOnSuccess(
-            avoid ->
-                logger.debug("[{}] Sent {} to {}", category, MessageType.CONNECT_ACK, category))
-        .onErrorResume(
-            throwable -> {
-              String errMessage =
-                  String.format(
-                      "Failed to send %s into %s",
-                      MessageType.CONNECT_ACK, controlMessagePublication);
-              return Mono.error(new RuntimeException(errMessage, throwable));
-            });
+          return controlMessagePublication
+              .enqueue(
+                  MessageType.CONNECT_ACK,
+                  Protocol.createConnectAckBody(connectRequestId, serverSessionStreamId),
+                  sessionId)
+              .retryBackoff(
+                  retryCount, Duration.ofMillis(retryMillis), Duration.ofMillis(retryMillis))
+              .timeout(Duration.ofMillis(timeoutMillis))
+              .doOnSuccess(
+                  avoid ->
+                      logger.debug(
+                          "[{}] Sent {} to {}", category, MessageType.CONNECT_ACK, category))
+              .onErrorResume(
+                  throwable -> {
+                    String errMessage =
+                        String.format(
+                            "Failed to send %s into %s",
+                            MessageType.CONNECT_ACK, controlMessagePublication);
+                    return Mono.error(new RuntimeException(errMessage, throwable));
+                  });
+        });
   }
 
   @Override
