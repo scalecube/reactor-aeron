@@ -2,14 +2,16 @@ package reactor.aeron;
 
 import io.aeron.Publication;
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import org.reactivestreams.Publisher;
 import reactor.core.Disposable;
 import reactor.core.publisher.Mono;
-import reactor.core.publisher.MonoSink;
-import reactor.core.scheduler.Schedulers;
 
 /** Default aeron outbound. */
 public final class DefaultAeronOutbound implements Disposable, AeronOutbound {
+
+  private static final RuntimeException NOT_CONNECTED_EXCEPTION =
+      new RuntimeException("publication is not connected");
 
   private final String category;
 
@@ -64,39 +66,35 @@ public final class DefaultAeronOutbound implements Disposable, AeronOutbound {
    * @return initialization handle
    */
   public Mono<Void> initialise(long sessionId, int streamId) {
-    return Mono.create(
-        sink -> {
+    return Mono.defer(
+        () -> {
           Publication aeronPublication =
               aeronResources.publication(category, channel, streamId, "to send data to", sessionId);
+
           this.publication =
               new DefaultMessagePublication(
                   aeronResources.eventLoop(), aeronPublication, category, options);
           this.sequencer = aeronResources.writeSequencer(category, publication, sessionId);
+
           int timeoutMillis = options.connectTimeoutMillis();
+          long retryMillis = 100;
+          long retryCount = timeoutMillis / retryMillis;
 
-          createRetryTask(sink, aeronPublication, timeoutMillis).schedule();
-        });
-  }
-
-  private RetryTask createRetryTask(
-      MonoSink<Void> sink, Publication aeronPublication, int timeoutMillis) {
-    return new RetryTask(
-        Schedulers.single(),
-        100,
-        timeoutMillis,
-        () -> {
-          if (aeronPublication.isConnected()) {
-            sink.success();
-            return true;
-          }
-          return false;
-        },
-        throwable -> {
-          String errMessage =
-              String.format(
-                  "Publication %s for sending data in not connected during %d millis",
-                  publication, timeoutMillis);
-          sink.error(new Exception(errMessage, throwable));
+          return Mono.fromCallable(aeronPublication::isConnected)
+              .filter(isConnected -> isConnected)
+              .switchIfEmpty(Mono.error(NOT_CONNECTED_EXCEPTION))
+              .retryBackoff(
+                  retryCount, Duration.ofMillis(retryMillis), Duration.ofMillis(retryMillis))
+              .timeout(Duration.ofMillis(timeoutMillis))
+              .then()
+              .onErrorResume(
+                  throwable -> {
+                    String errMessage =
+                        String.format(
+                            "Publication %s for sending data in not connected during %d millis",
+                            publication, timeoutMillis);
+                    return Mono.error(new RuntimeException(errMessage, throwable));
+                  });
         });
   }
 
