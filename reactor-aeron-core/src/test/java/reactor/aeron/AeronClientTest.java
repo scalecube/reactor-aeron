@@ -16,6 +16,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
 import reactor.aeron.client.AeronClient;
@@ -169,6 +170,7 @@ class AeronClientTest extends BaseAeronTest {
   }
 
   @Test
+  @Disabled
   public void testTwoClientsRequestResponse200000() {
     int count = 200_000;
     createServer(
@@ -277,7 +279,7 @@ class AeronClientTest extends BaseAeronTest {
 
     server.dispose();
 
-    latch.await(imageLivenessTimeout.toMillis(), TimeUnit.MILLISECONDS);
+    latch.await(10, TimeUnit.SECONDS);
 
     assertEquals(0, latch.getCount());
   }
