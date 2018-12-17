@@ -2,16 +2,12 @@ package reactor.aeron;
 
 import java.nio.ByteBuffer;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.Disposable;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 
 public final class DefaultAeronInbound implements AeronInbound, OnDisposable {
 
@@ -46,8 +42,6 @@ public final class DefaultAeronInbound implements AeronInbound, OnDisposable {
 
           AeronEventLoop eventLoop = resources.nextEventLoop();
 
-          AtomicReference<Disposable> disposableUnavailable = new AtomicReference<>();
-
           return resources
               .dataSubscription(
                   name,
@@ -55,17 +49,8 @@ public final class DefaultAeronInbound implements AeronInbound, OnDisposable {
                   streamId,
                   messageProcessor,
                   eventLoop,
-                  image -> {
-                    Disposable disposable = disposableUnavailable.get();
-                    if (disposable != null) {
-                      disposable.dispose();
-                    }
-                  },
-                  image -> {
-                    disposableUnavailable.set(Schedulers.single().schedule(() -> {
-                      Optional.ofNullable(onCompleteHandler).ifPresent(Runnable::run);
-                    }, 5, TimeUnit.SECONDS));
-                  })
+                  null,
+                  image -> Optional.ofNullable(onCompleteHandler).ifPresent(Runnable::run))
               .doOnSuccess(
                   result -> {
                     subscription = result;

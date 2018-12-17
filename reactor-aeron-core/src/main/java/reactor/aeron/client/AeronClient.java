@@ -1,9 +1,7 @@
 package reactor.aeron.client;
 
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -12,9 +10,7 @@ import reactor.aeron.AeronEventLoop;
 import reactor.aeron.AeronOptions;
 import reactor.aeron.AeronResources;
 import reactor.aeron.Connection;
-import reactor.core.Disposable;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 
 public final class AeronClient {
 
@@ -73,8 +69,6 @@ public final class AeronClient {
           String clientChannel = settings.options().clientChannel();
           AeronEventLoop eventLoop = resources.nextEventLoop();
 
-          AtomicReference<Disposable> disposableUnavailable = new AtomicReference<>();
-
           return resources
               .controlSubscription(
                   category,
@@ -82,13 +76,8 @@ public final class AeronClient {
                   clientControlStreamId,
                   clientConnector,
                   eventLoop,
-                  image -> {
-                    Disposable disposable = disposableUnavailable.get();
-                    if (disposable != null) {
-                      disposable.dispose();
-                    }
-                  },
-                  image -> disposableUnavailable.set(Schedulers.single().schedule(clientConnector::dispose, 5, TimeUnit.SECONDS)))
+                  null,
+                  image -> clientConnector.dispose())
               .flatMap(
                   controlSubscription -> {
                     clientConnector.onSubscription(controlSubscription);
