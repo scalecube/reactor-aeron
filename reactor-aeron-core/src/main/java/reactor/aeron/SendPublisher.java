@@ -12,9 +12,13 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Operators;
+import reactor.util.Logger;
+import reactor.util.Loggers;
 import reactor.util.concurrent.Queues;
 
 public class SendPublisher extends Flux<ByteBuffer> {
+
+  private static final Logger logger = Loggers.getLogger(SendPublisher.class);
 
   private static final AtomicIntegerFieldUpdater<SendPublisher> WIP =
       AtomicIntegerFieldUpdater.newUpdater(SendPublisher.class, "wip");
@@ -190,8 +194,13 @@ public class SendPublisher extends Flux<ByteBuffer> {
                           // todo ReferenceCountUtil.safeRelease(poll);
                         }
                       })
-                  // todo .subscribe(null, this::disposeCurrentDataStream);
-                  .subscribe();
+                  .subscribe(
+                      null,
+                      throwable -> {
+                        this.subscription.cancel();
+                        logger.error(
+                            "Failed to publish signal into session: " + sessionId, throwable);
+                      });
 
               tryRequestMoreUpstream();
             } else {
@@ -223,18 +232,8 @@ public class SendPublisher extends Flux<ByteBuffer> {
 
     @Override
     public void request(long n) {
-      if (eventLoop.inEventLoop()) {
-        requested = Operators.addCap(n, requested);
-        innerSubscriber.tryDrain();
-      } else {
-        eventLoop
-            .execute(
-                sink -> {
-                  request(n);
-                  sink.success();
-                })
-            .subscribe(/*todo*/);
-      }
+      requested = Operators.addCap(n, requested);
+      innerSubscriber.tryDrain();
     }
 
     @Override
