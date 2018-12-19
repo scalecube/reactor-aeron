@@ -29,10 +29,10 @@ final class AeronWriteSequencer implements Disposable {
   private static final Logger logger = Loggers.getLogger(AeronWriteSequencer.class);
 
   private final Publisher<?> dataPublisher;
-  private final long sessionId;
+  final long sessionId;
   private final MessagePublication publication;
 
-  private final AeronEventLoop eventLoop;
+  final AeronEventLoop eventLoop;
 
   private final PublisherSender inner;
   private final int prefetch = 1;

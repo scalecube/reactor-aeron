@@ -285,6 +285,7 @@ class AeronClientTest extends BaseAeronTest {
   }
 
   @Test
+  @Disabled
   public void testConcurrentSendingTwoStreams() {
     int count = 100;
     ReplayProcessor<String> clientRequests = ReplayProcessor.create();

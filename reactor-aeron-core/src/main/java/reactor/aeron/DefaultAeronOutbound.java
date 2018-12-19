@@ -86,7 +86,9 @@ public final class DefaultAeronOutbound implements AeronOutbound, OnDisposable {
 
   @Override
   public AeronOutbound send(Publisher<? extends ByteBuffer> dataStream) {
-    return then(sequencer.write(dataStream));
+    return then(new SendPublisher(sequencer.sessionId, dataStream, publication, sequencer.eventLoop)
+        .then());
+    // return then(sequencer.write(dataStream));
   }
 
   @Override
