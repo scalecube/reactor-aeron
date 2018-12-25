@@ -239,6 +239,7 @@ public final class MessagePublication implements OnDisposable, AutoCloseable {
             new UnsafeBuffer(new byte[msgBody.remaining() + Protocol.HEADER_SIZE]);
         int index = Protocol.putHeader(buffer, 0, msgType, sessionId);
         buffer.putBytes(index, msgBody, msgBody.remaining());
+        msgBody.flip();
         return publication.offer(buffer);
       }
     }
