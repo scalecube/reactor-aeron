@@ -13,6 +13,4 @@ public interface ControlMessageSubscriber {
       int clientSessionStreamId);
 
   void onConnectAck(long connectRequestId, long sessionId, int serverSessionStreamId);
-
-  void onDisconnect(long sessionId);
 }

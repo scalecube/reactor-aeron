@@ -100,7 +100,7 @@ public class AeronResources implements OnDisposable {
     Runtime.getRuntime().addShutdownHook(new Thread(() -> deleteAeronDirectory(aeronContext)));
 
     logger.info(
-        "{} has initialized embedded media mediaDriver, aeron directory: {}", this, directoryName);
+        "{} has initialized embedded mediaDriver, aeron directory: {}", this, directoryName);
   }
 
   public AeronEventLoop nextEventLoop() {

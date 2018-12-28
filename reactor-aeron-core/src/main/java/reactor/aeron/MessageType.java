@@ -2,8 +2,7 @@ package reactor.aeron;
 
 public enum MessageType {
   CONNECT(1),
-  CONNECT_ACK(2),
-  DISCONNECT(3);
+  CONNECT_ACK(2);
 
   private final int code;
 
@@ -27,8 +26,6 @@ public enum MessageType {
         return CONNECT;
       case 2:
         return CONNECT_ACK;
-      case 3:
-        return DISCONNECT;
       default:
         throw new IllegalArgumentException("Illegal message type code: " + code);
     }

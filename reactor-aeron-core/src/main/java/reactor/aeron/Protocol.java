@@ -96,28 +96,4 @@ public class Protocol {
     buffer.putLong(index, connectRequestId);
     return ByteBuffer.wrap(bytes);
   }
-
-  /**
-   * Factory for disconnect body bytebuffer.
-   *
-   * @param sessionId session id
-   * @return bytebuffer of disconnect body
-   */
-  public static ByteBuffer createDisconnectBody(long sessionId) {
-    int bytesLength =
-        BitUtil.SIZE_OF_INT /*MessageType.DISCONNECT*/ //
-            + BitUtil.SIZE_OF_LONG /*sessionId*/;
-
-    byte[] bytes = new byte[bytesLength];
-    UnsafeBuffer buffer = new UnsafeBuffer(bytes);
-    int index = 0;
-
-    // put MessageType.DISCONNECT
-    buffer.putInt(index, MessageType.DISCONNECT.getCode());
-    index += BitUtil.SIZE_OF_INT;
-
-    // put sessionId
-    buffer.putLong(index, sessionId);
-    return ByteBuffer.wrap(bytes);
-  }
 }

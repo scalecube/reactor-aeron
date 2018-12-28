@@ -33,9 +33,6 @@ public class ControlFragmentHandler implements FragmentHandler {
       case CONNECT_ACK:
         onConnectAck(buffer, index);
         break;
-      case DISCONNECT:
-        onDisconnect(buffer, index);
-        break;
       default:
         logger.error("Unsupported message type: {}", messageType);
     }
@@ -69,10 +66,5 @@ public class ControlFragmentHandler implements FragmentHandler {
     long connectRequestId = buffer.getLong(index);
 
     subscriber.onConnectAck(connectRequestId, sessionId, serverSessionStreamId);
-  }
-
-  private void onDisconnect(DirectBuffer buffer, int index) {
-    long sessionId = buffer.getLong(index);
-    subscriber.onDisconnect(sessionId);
   }
 }

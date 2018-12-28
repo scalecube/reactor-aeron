@@ -76,14 +76,6 @@ public final class AeronClientConnector implements ControlMessageSubscriber, OnD
     return Mono.defer(() -> new ClientHandler().start());
   }
 
-  private void dispose(long sessionId) {
-    handlers
-        .stream()
-        .filter(handler -> handler.sessionId == sessionId)
-        .findFirst()
-        .ifPresent(ClientHandler::dispose);
-  }
-
   @Override
   public void dispose() {
     dispose.onComplete();
@@ -219,20 +211,6 @@ public final class AeronClientConnector implements ControlMessageSubscriber, OnD
                               ex.toString())));
     }
 
-    private Mono<Void> sendDisconnectRequest() {
-      return controlPublication.flatMap(
-          publication ->
-              publication
-                  .enqueue(Protocol.createDisconnectBody(sessionId))
-                  .doOnSuccess(avoid -> logger.debug("Sent DISCONNECT on session {}", this))
-                  .doOnError(
-                      th ->
-                          logger.warn(
-                              "Failed to send DISCONNECT on session {}, cause: {}",
-                              this,
-                              th.toString())));
-    }
-
     @Override
     public AeronInbound inbound() {
       return inbound;
@@ -285,25 +263,22 @@ public final class AeronClientConnector implements ControlMessageSubscriber, OnD
 
             handlers.remove(this);
 
-            return sendDisconnectRequest()
-                .onErrorResume(ex -> Mono.empty())
-                .then(
-                    Mono.defer(
-                        () -> {
-                          Optional.ofNullable(outbound) //
-                              .ifPresent(DefaultAeronOutbound::dispose);
-                          Optional.ofNullable(inbound) //
-                              .ifPresent(DefaultAeronInbound::dispose);
+            return Mono.defer(
+                () -> {
+                  Optional.ofNullable(outbound) //
+                      .ifPresent(DefaultAeronOutbound::dispose);
+                  Optional.ofNullable(inbound) //
+                      .ifPresent(DefaultAeronInbound::dispose);
 
-                          return Mono.whenDelayError(
-                                  Optional.ofNullable(outbound)
-                                      .map(DefaultAeronOutbound::onDispose)
-                                      .orElse(Mono.empty()),
-                                  Optional.ofNullable(inbound)
-                                      .map(DefaultAeronInbound::onDispose)
-                                      .orElse(Mono.empty()))
-                              .doFinally(s -> logger.debug("Closed {}", this));
-                        }));
+                  return Mono.whenDelayError(
+                          Optional.ofNullable(outbound)
+                              .map(DefaultAeronOutbound::onDispose)
+                              .orElse(Mono.empty()),
+                          Optional.ofNullable(inbound)
+                              .map(DefaultAeronInbound::onDispose)
+                              .orElse(Mono.empty()))
+                      .doFinally(s -> logger.debug("Closed {}", this));
+                });
           });
     }
   }
@@ -325,18 +300,6 @@ public final class AeronClientConnector implements ControlMessageSubscriber, OnD
     if (connectAckPromise != null) {
       connectAckPromise.success(sessionId, serverSessionStreamId);
     }
-  }
-
-  /**
-   * Handler for complete signal from server. At the moment of writing this javadoc the server
-   * doesn't emit complete signal. Method is left with logging.
-   *
-   * @param sessionId session id
-   */
-  @Override
-  public void onDisconnect(long sessionId) {
-    logger.debug("Received DISCONNECT for sessionId: {}", category, sessionId);
-    dispose(sessionId);
   }
 
   @Override
