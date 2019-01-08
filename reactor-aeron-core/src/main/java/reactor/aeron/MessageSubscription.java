@@ -81,6 +81,7 @@ public final class MessageSubscription implements OnDisposable, org.reactivestre
 
   @Override
   public void cancel() {
+    // todo I'm not sure that we need to support cancel
     cancelled = true;
   }
 

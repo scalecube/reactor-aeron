@@ -25,6 +25,11 @@ public final class DefaultAeronInbound implements AeronInbound, FragmentHandler,
     ByteBuffer dstBuffer = ByteBuffer.allocate(length);
     buffer.getBytes(offset, dstBuffer, length);
     dstBuffer.flip();
+    // todo see io.aeron.ControlledFragmentAssembler and its io.aeron.logbuffer.ControlledFragmentHandler.Action.ABORT
+//    if (destination == null) {
+//      //abort
+//      return;
+//    }
     destination.onNext(dstBuffer);
   }
 
