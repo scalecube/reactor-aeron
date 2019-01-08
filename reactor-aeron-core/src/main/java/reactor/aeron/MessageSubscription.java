@@ -10,7 +10,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoProcessor;
 
 // TODO investigate why implementing org.reactivestreams.Subscription were needed
-public final class MessageSubscription implements OnDisposable {
+public final class MessageSubscription implements OnDisposable, org.reactivestreams.Subscription {
 
   private static final Logger logger = LoggerFactory.getLogger(MessageSubscription.class);
 
@@ -22,6 +22,10 @@ public final class MessageSubscription implements OnDisposable {
   private final Duration connectTimeout;
 
   private final MonoProcessor<Void> onDispose = MonoProcessor.create();
+
+  private volatile boolean cancelled = false;
+  private volatile long requested;
+  private volatile long processed;
 
   /**
    * Constructor.
@@ -48,9 +52,40 @@ public final class MessageSubscription implements OnDisposable {
    * @return the number of fragments received
    */
   int poll() {
-    // TODO after removing reactiveStreams.Subscription removed from here:
-    //  r, numOfPolled, requested; correlates with problem around model of AeronInbound
-    return subscription.poll(fragmentHandler, PREFETCH);
+    if (canPoll()) {
+      // TODO after removing reactiveStreams.Subscription removed from here:
+      //  r, numOfPolled, requested; correlates with problem around model of AeronInbound
+      int poll = subscription.poll(fragmentHandler, PREFETCH);
+      if (poll > 1) {
+        processed++;
+      }
+      return poll;
+    }
+    return 0;
+  }
+
+  @Override
+  public void request(long n) {
+    if (n < 0) {
+      throw new IllegalStateException("n must be greater than zero");
+    }
+    // todo
+    synchronized (this) {
+      long r = requested;
+      if (r != Long.MAX_VALUE && n > 0) {
+        r += n;
+        requested = r < 0 ? Long.MAX_VALUE : r;
+      }
+    }
+  }
+
+  @Override
+  public void cancel() {
+    cancelled = true;
+  }
+
+  private boolean canPoll() {
+    return !cancelled && processed < requested;
   }
 
   /**

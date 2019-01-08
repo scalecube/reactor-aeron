@@ -56,7 +56,7 @@ final class AeronClientConnector {
               .flatMap(MessagePublication::ensureConnected)
               .flatMap(
                   publication -> {
-                    final DefaultAeronInbound inbound = new DefaultAeronInbound();
+                    final DefaultAeronInbound inbound = new DefaultAeronInbound(messageSubscription);
                     final DefaultAeronOutbound outbound = new DefaultAeronOutbound(publication);
 
                     // inbound->MDC(sessionId)->Sub(control-endpoint, sessionId)

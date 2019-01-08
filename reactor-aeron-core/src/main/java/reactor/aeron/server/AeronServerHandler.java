@@ -141,7 +141,7 @@ final class AeronServerHandler implements FragmentHandler, OnDisposable {
         .publication(outboundChannel, options)
         .map(
             publication -> {
-              DefaultAeronInbound inbound = new DefaultAeronInbound();
+              DefaultAeronInbound inbound = new DefaultAeronInbound(messageSubscription);
               DefaultAeronOutbound outbound = new DefaultAeronOutbound(publication);
               return new DefaultAeronConnection(sessionId, inbound, outbound, publication);
             })
