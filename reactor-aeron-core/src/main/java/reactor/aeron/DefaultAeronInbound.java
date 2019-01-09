@@ -14,10 +14,15 @@ import reactor.core.publisher.Flux;
 public final class DefaultAeronInbound implements AeronInbound, FragmentHandler, Disposable {
 
   private final MessageSubscription messageSubscription;
+
+  private final Flux<ByteBuffer> inbound;
+
   private volatile CoreSubscriber<? super ByteBuffer> destination;
+
 
   public DefaultAeronInbound(MessageSubscription messageSubscription) {
     this.messageSubscription = messageSubscription;
+    this.inbound = new FluxReceiver().share();
   }
 
   @Override
@@ -35,8 +40,8 @@ public final class DefaultAeronInbound implements AeronInbound, FragmentHandler,
 
   @Override
   public ByteBufferFlux receive() {
-    // todo do we need onBackpressureBuffer?
-    return new ByteBufferFlux(new FluxReceiver().onBackpressureBuffer());
+//     todo do we need onBackpressureBuffer?
+    return new ByteBufferFlux(inbound.onBackpressureBuffer());
   }
 
   @Override
