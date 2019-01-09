@@ -183,7 +183,6 @@ public class AeronResources implements OnDisposable {
    *
    * @param channel aeron channel
    * @param options aeron options
-   * @param fragmentHandler fragment handler
    * @param availableImageHandler available image handler; optional
    * @param unavailableImageHandler unavailable image handler; optional
    * @return mono result
@@ -191,7 +190,6 @@ public class AeronResources implements OnDisposable {
   public Mono<MessageSubscription> subscription(
       String channel,
       AeronOptions options,
-      FragmentHandler fragmentHandler,
       Consumer<Image> availableImageHandler,
       Consumer<Image> unavailableImageHandler) {
     return Mono.defer(
@@ -213,8 +211,7 @@ public class AeronResources implements OnDisposable {
                               new MessageSubscription(
                                   aeronSubscription,
                                   options,
-                                  eventLoop,
-                                  new FragmentAssembler(fragmentHandler)))
+                                  eventLoop))
                           .doOnError(
                               ex -> {
                                 logger.error(

@@ -1,16 +1,24 @@
 package reactor.aeron;
 
+import io.aeron.FragmentAssembler;
 import io.aeron.Subscription;
 import io.aeron.logbuffer.FragmentHandler;
+import io.aeron.logbuffer.Header;
+import java.nio.ByteBuffer;
 import java.time.Duration;
+import java.util.Objects;
+import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoProcessor;
 
 // TODO investigate why implementing org.reactivestreams.Subscription were needed
-public final class MessageSubscription implements OnDisposable, org.reactivestreams.Subscription {
+public final class MessageSubscription
+    implements AeronInbound, FragmentHandler, OnDisposable, org.reactivestreams.Subscription {
 
   private static final Logger logger = LoggerFactory.getLogger(MessageSubscription.class);
 
@@ -23,6 +31,10 @@ public final class MessageSubscription implements OnDisposable, org.reactivestre
 
   private final MonoProcessor<Void> onDispose = MonoProcessor.create();
 
+  private final Flux<ByteBuffer> inbound = new FluxReceiver().share();
+
+  private volatile CoreSubscriber<? super ByteBuffer> destination;
+
   private volatile boolean cancelled = false;
   private volatile long requested;
   private volatile long processed;
@@ -33,16 +45,14 @@ public final class MessageSubscription implements OnDisposable, org.reactivestre
    * @param subscription aeron subscription
    * @param options aeron options
    * @param eventLoop event loop where this {@code MessageSubscription} is assigned
-   * @param fragmentHandler aeron fragment handler
    */
   public MessageSubscription(
       Subscription subscription,
       AeronOptions options,
-      AeronEventLoop eventLoop,
-      FragmentHandler fragmentHandler) {
+      AeronEventLoop eventLoop) {
     this.subscription = subscription;
     this.eventLoop = eventLoop;
-    this.fragmentHandler = fragmentHandler;
+    this.fragmentHandler = new FragmentAssembler(this);
     this.connectTimeout = options.connectTimeout();
   }
 
@@ -108,6 +118,8 @@ public final class MessageSubscription implements OnDisposable, org.reactivestre
       throw Exceptions.propagate(ex);
     } finally {
       onDispose.onComplete();
+      destination.onComplete();
+      destination = null;
     }
   }
 
@@ -129,7 +141,7 @@ public final class MessageSubscription implements OnDisposable, org.reactivestre
    */
   @Override
   public boolean isDisposed() {
-    return subscription.isClosed();
+    return subscription.isClosed() && destination == null;
   }
 
   @Override
@@ -172,5 +184,35 @@ public final class MessageSubscription implements OnDisposable, org.reactivestre
   @Override
   public String toString() {
     return "MessageSubscription{sub=" + subscription.channel() + "}";
+  }
+
+  @Override
+  public void onFragment(DirectBuffer buffer, int offset, int length, Header header) {
+    ByteBuffer dstBuffer = ByteBuffer.allocate(length);
+    buffer.getBytes(offset, dstBuffer, length);
+    dstBuffer.flip();
+    // todo see io.aeron.ControlledFragmentAssembler and its
+    // io.aeron.logbuffer.ControlledFragmentHandler.Action.ABORT
+    //    if (destination == null) {
+    //      //abort
+    //      return;
+    //    }
+    destination.onNext(dstBuffer);
+  }
+
+  @Override
+  public ByteBufferFlux receive() {
+    // todo do we need onBackpressureBuffer? it requests more items.
+    return new ByteBufferFlux(inbound.onBackpressureBuffer());
+  }
+
+  private class FluxReceiver extends Flux<ByteBuffer> {
+
+    @Override
+    public void subscribe(CoreSubscriber<? super ByteBuffer> destination) {
+      Objects.requireNonNull(destination);
+      MessageSubscription.this.destination = destination;
+      destination.onSubscribe(MessageSubscription.this);
+    }
   }
 }

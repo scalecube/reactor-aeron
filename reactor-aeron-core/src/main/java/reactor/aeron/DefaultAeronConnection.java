@@ -3,6 +3,7 @@ package reactor.aeron;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.Disposable;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoProcessor;
 
@@ -16,8 +17,8 @@ public final class DefaultAeronConnection implements Connection {
 
   private final int sessionId;
 
-  private final DefaultAeronInbound inbound;
-  private final DefaultAeronOutbound outbound;
+  private final AeronInbound inbound;
+  private final AeronOutbound outbound;
   private final MessagePublication publication;
   private final MessageSubscription subscription;
 
@@ -33,10 +34,7 @@ public final class DefaultAeronConnection implements Connection {
    * @param publication publication
    */
   public DefaultAeronConnection(
-      int sessionId,
-      DefaultAeronInbound inbound,
-      DefaultAeronOutbound outbound,
-      MessagePublication publication) {
+      int sessionId, AeronInbound inbound, AeronOutbound outbound, MessagePublication publication) {
     this(sessionId, inbound, outbound, null, publication);
   }
 
@@ -51,8 +49,8 @@ public final class DefaultAeronConnection implements Connection {
    */
   public DefaultAeronConnection(
       int sessionId,
-      DefaultAeronInbound inbound,
-      DefaultAeronOutbound outbound,
+      AeronInbound inbound,
+      AeronOutbound outbound,
       MessageSubscription subscription,
       MessagePublication publication) {
 
@@ -101,7 +99,7 @@ public final class DefaultAeronConnection implements Connection {
         () -> {
           logger.debug("Disposing {}", this);
           return Mono.whenDelayError(
-              Mono.fromRunnable(inbound::dispose),
+              Mono.fromRunnable(((Disposable) inbound)::dispose),
               Optional.ofNullable(subscription)
                   .map(s -> Mono.fromRunnable(s::dispose).then(s.onDispose()))
                   .orElse(Mono.empty()),

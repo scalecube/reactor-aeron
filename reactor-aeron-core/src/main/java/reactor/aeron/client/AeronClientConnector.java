@@ -56,7 +56,6 @@ final class AeronClientConnector {
               .flatMap(MessagePublication::ensureConnected)
               .flatMap(
                   publication -> {
-                    final DefaultAeronInbound inbound = new DefaultAeronInbound(messageSubscription);
                     final DefaultAeronOutbound outbound = new DefaultAeronOutbound(publication);
 
                     // inbound->MDC(sessionId)->Sub(control-endpoint, sessionId)
@@ -74,7 +73,6 @@ final class AeronClientConnector {
                         .subscription(
                             inboundChannel,
                             options,
-                            inbound, /*fragmentHandler*/
                             image ->
                                 logger.debug(
                                     "{}: created client inbound", Integer.toHexString(sessionId)),
@@ -97,7 +95,7 @@ final class AeronClientConnector {
                         .map(
                             subscription ->
                                 new DefaultAeronConnection(
-                                    sessionId, inbound, outbound, subscription, publication))
+                                    sessionId, subscription, outbound, subscription, publication))
                         .doOnSuccess(
                             connection ->
                                 setupConnection(sessionId, connection, inboundUnavailable))
