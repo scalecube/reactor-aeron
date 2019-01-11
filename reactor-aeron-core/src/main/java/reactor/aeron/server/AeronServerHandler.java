@@ -5,11 +5,10 @@ import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
+import org.jctools.maps.NonBlockingHashMapLong;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,8 +45,7 @@ final class AeronServerHandler implements FragmentHandler, OnDisposable {
 
   private volatile MessageSubscription subscription; // server acceptor subscription
 
-  // TODO think of more performant concurrent hashmap
-  private final Map<Integer, Connection> connections = new ConcurrentHashMap<>(32);
+  private final NonBlockingHashMapLong<Connection> connections = new NonBlockingHashMapLong<>(32);
 
   private final MonoProcessor<Void> dispose = MonoProcessor.create();
   private final MonoProcessor<Void> onDispose = MonoProcessor.create();
@@ -263,6 +261,6 @@ final class AeronServerHandler implements FragmentHandler, OnDisposable {
 
   @Override
   public String toString() {
-    return "AeronServerHandler0x" + Integer.toHexString(System.identityHashCode(this));
+    return "AeronServerHandler" + Integer.toHexString(System.identityHashCode(this));
   }
 }
