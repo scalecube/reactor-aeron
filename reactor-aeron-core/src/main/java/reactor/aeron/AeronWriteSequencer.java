@@ -1,6 +1,6 @@
 package reactor.aeron;
 
-import java.nio.ByteBuffer;
+import io.netty.buffer.ByteBuf;
 import java.util.Objects;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
@@ -20,7 +20,7 @@ final class AeronWriteSequencer {
    * @param publisher data publisher
    * @return mono handle
    */
-  Mono<Void> write(Publisher<? extends ByteBuffer> publisher) {
+  Mono<Void> write(Publisher<? extends ByteBuf> publisher) {
     Objects.requireNonNull(publisher, "publisher must be not null");
 
     return Mono.defer(

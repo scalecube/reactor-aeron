@@ -2,6 +2,7 @@ package reactor.aeron;
 
 import io.aeron.Publication;
 import io.aeron.logbuffer.BufferClaim;
+import io.netty.buffer.ByteBuf;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.Queue;
@@ -52,7 +53,7 @@ class MessagePublication implements OnDisposable {
    * @param buffer buffer
    * @return mono handle
    */
-  Mono<Void> publish(ByteBuffer buffer) {
+  Mono<Void> publish(ByteBuf buffer) {
     return Mono.create(
         sink -> {
           boolean result = false;
@@ -247,13 +248,13 @@ class MessagePublication implements OnDisposable {
    */
   private class PublishTask {
 
-    private final ByteBuffer msgBody;
+    private final ByteBuf msgBody;
     private final MonoSink<Void> sink;
     private volatile boolean isDisposed = false;
 
     private long start;
 
-    private PublishTask(ByteBuffer msgBody, MonoSink<Void> sink) {
+    private PublishTask(ByteBuf msgBody, MonoSink<Void> sink) {
       this.msgBody = msgBody;
       this.sink = sink.onDispose(() -> isDisposed = true);
     }

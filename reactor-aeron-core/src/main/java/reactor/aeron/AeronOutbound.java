@@ -1,6 +1,8 @@
 package reactor.aeron;
 
-import java.nio.ByteBuffer;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import java.nio.charset.Charset;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.publisher.Mono;
@@ -15,7 +17,7 @@ public interface AeronOutbound extends Publisher<Void> {
    * @return A new {@link AeronOutbound} to append further send. It will emit a complete signal upon
    *     successful sequence write or an error during write.
    */
-  AeronOutbound send(Publisher<? extends ByteBuffer> dataStream);
+  AeronOutbound send(Publisher<? extends ByteBuf> dataStream);
 
   /**
    * Send data to the peer, listen for any error on write and close on terminal signal
@@ -26,6 +28,18 @@ public interface AeronOutbound extends Publisher<Void> {
    *     successful sequence write or an error during write.
    */
   AeronOutbound sendString(Publisher<String> dataStream);
+
+  /**
+   * Send data to the peer, listen for any error on write and close on terminal signal
+   * (complete|error).
+   *
+   * @param source the dataStream publishing items to send
+   * @param charset {@link Charset} instance
+   * @param allocator {@link ByteBufAllocator} instance
+   * @return A new {@link AeronOutbound} to append further send. It will emit a complete signal upon
+   *     successful sequence write or an error during write.
+   */
+  AeronOutbound sendString(Publisher<String> source, Charset charset, ByteBufAllocator allocator);
 
   /**
    * Obtain a {@link Mono} of pending outbound(s) write completion.

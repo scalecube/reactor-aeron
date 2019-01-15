@@ -1,7 +1,8 @@
 package reactor.aeron;
 
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import java.nio.charset.Charset;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 
@@ -21,14 +22,26 @@ final class DefaultAeronOutbound implements AeronOutbound {
   }
 
   @Override
-  public AeronOutbound send(Publisher<? extends ByteBuffer> dataStream) {
+  public AeronOutbound send(Publisher<? extends ByteBuf> dataStream) {
     return then(sequencer.write(dataStream));
   }
 
   @Override
   public AeronOutbound sendString(Publisher<String> dataStream) {
+    return sendString(dataStream, Charset.defaultCharset(), ByteBufAllocator.DEFAULT);
+  }
+
+  @Override
+  public AeronOutbound sendString(
+      Publisher<String> source, Charset charset, ByteBufAllocator allocator) {
     return send(
-        Flux.from(dataStream).map(s -> s.getBytes(StandardCharsets.UTF_8)).map(ByteBuffer::wrap));
+        Flux.from(source)
+            .map(
+                s -> {
+                  ByteBuf buffer = allocator.buffer();
+                  buffer.writeCharSequence(s, charset);
+                  return buffer;
+                }));
   }
 
   void dispose() {

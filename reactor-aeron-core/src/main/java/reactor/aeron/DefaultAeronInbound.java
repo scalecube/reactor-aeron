@@ -4,6 +4,7 @@ import io.aeron.Image;
 import io.aeron.ImageFragmentAssembler;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
+import io.netty.buffer.ByteBuf;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -35,7 +36,7 @@ final class DefaultAeronInbound implements AeronInbound {
 
   private volatile long requested;
   private long produced;
-  private volatile CoreSubscriber<? super ByteBuffer> destinationSubscriber;
+  private volatile CoreSubscriber<? super ByteBuf> destinationSubscriber;
 
   /**
    * Constructor.
@@ -98,7 +99,7 @@ final class DefaultAeronInbound implements AeronInbound {
       buffer.getBytes(offset, dstBuffer, length);
       dstBuffer.flip();
 
-      CoreSubscriber<? super ByteBuffer> destination =
+      CoreSubscriber<? super ByteBuf> destination =
           DefaultAeronInbound.this.destinationSubscriber;
 
       // TODO check on cancel?
@@ -106,7 +107,7 @@ final class DefaultAeronInbound implements AeronInbound {
     }
   }
 
-  private class FluxReceive extends Flux<ByteBuffer> implements Subscription {
+  private class FluxReceive extends Flux<ByteBuf> implements Subscription {
 
     @Override
     public void request(long n) {
@@ -125,7 +126,7 @@ final class DefaultAeronInbound implements AeronInbound {
     }
 
     @Override
-    public void subscribe(CoreSubscriber<? super ByteBuffer> destinationSubscriber) {
+    public void subscribe(CoreSubscriber<? super ByteBuf> destinationSubscriber) {
       boolean destinationSet =
           DESTINATION_SUBSCRIBER.compareAndSet(
               DefaultAeronInbound.this, null, destinationSubscriber);

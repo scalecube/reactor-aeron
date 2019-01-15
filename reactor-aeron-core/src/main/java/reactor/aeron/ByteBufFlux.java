@@ -13,38 +13,17 @@ import reactor.core.publisher.FluxOperator;
 
 public final class ByteBufFlux extends FluxOperator<ByteBuf, ByteBuf> {
 
-  private final ByteBufAllocator allocator;
-
   public ByteBufFlux(Publisher<? extends ByteBuf> source) {
-    this(Flux.from(source), ByteBufAllocator.DEFAULT);
-  }
-
-  public ByteBufFlux(Publisher<? extends ByteBuf> source, ByteBufAllocator allocator) {
-    this(Flux.from(source), allocator);
+    this(Flux.from(source));
   }
 
   public ByteBufFlux(Flux<? extends ByteBuf> source) {
-    this(source, ByteBufAllocator.DEFAULT);
-  }
-
-  public ByteBufFlux(Flux<? extends ByteBuf> source, ByteBufAllocator allocator) {
     super(source);
-    this.allocator = Objects.requireNonNull(allocator, "allocator");
   }
 
   @Override
   public void subscribe(CoreSubscriber<? super ByteBuf> s) {
     source.subscribe(s);
-  }
-
-  /**
-   * Disable auto memory release on each buffer published, retaining in order to prevent premature
-   * recycling when buffers are accumulated downstream (async).
-   *
-   * @return {@link ByteBufFlux} of retained {@link ByteBuf}
-   */
-  public ByteBufFlux retain() {
-    return new ByteBufFlux(doOnNext(ByteBuf::retain), allocator);
   }
 
   /**
@@ -152,7 +131,6 @@ public final class ByteBufFlux extends FluxOperator<ByteBuf, ByteBuf> {
                   ByteBuf buffer = allocator.buffer();
                   buffer.writeCharSequence(s, charset);
                   return buffer;
-                }),
-        allocator);
+                }));
   }
 }
