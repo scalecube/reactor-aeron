@@ -27,19 +27,14 @@ final class DefaultAeronOutbound implements AeronOutbound {
   }
 
   @Override
-  public AeronOutbound sendString(Publisher<String> dataStream) {
-    return sendString(dataStream, Charset.defaultCharset(), ByteBufAllocator.DEFAULT);
-  }
-
-  @Override
-  public AeronOutbound sendString(
-      Publisher<String> source, Charset charset, ByteBufAllocator allocator) {
+  public AeronOutbound sendString(Publisher<String> source) {
     return send(
         Flux.from(source)
             .map(
                 s -> {
-                  ByteBuf buffer = allocator.buffer();
-                  buffer.writeCharSequence(s, charset);
+                  ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
+
+                  buffer.writeCharSequence(s, Charset.defaultCharset());
                   return buffer;
                 }));
   }

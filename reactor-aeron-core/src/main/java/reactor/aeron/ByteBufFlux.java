@@ -2,10 +2,7 @@ package reactor.aeron;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
-import io.netty.util.IllegalReferenceCountException;
-import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
-import java.util.Objects;
 import org.reactivestreams.Publisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.publisher.Flux;
@@ -42,48 +39,7 @@ public final class ByteBufFlux extends FluxOperator<ByteBuf, ByteBuf> {
    * @return a {@link String} inbound {@link Flux}
    */
   public final Flux<String> asString(Charset charset) {
-    return handle(
-        (bb, sink) -> {
-          try {
-            sink.next(bb.readCharSequence(bb.readableBytes(), charset).toString());
-          } catch (IllegalReferenceCountException e) {
-            sink.complete();
-          }
-        });
-  }
-
-  /**
-   * Convert to a {@link ByteBuffer} inbound {@link Flux}.
-   *
-   * @return a {@link ByteBuffer} inbound {@link Flux}
-   */
-  public final Flux<ByteBuffer> asByteBuffer() {
-    return handle(
-        (bb, sink) -> {
-          try {
-            sink.next(bb.nioBuffer());
-          } catch (IllegalReferenceCountException e) {
-            sink.complete();
-          }
-        });
-  }
-
-  /**
-   * Convert to a {@literal byte[]} inbound {@link Flux}.
-   *
-   * @return a {@literal byte[]} inbound {@link Flux}
-   */
-  public final Flux<byte[]> asByteArray() {
-    return handle(
-        (bb, sink) -> {
-          try {
-            byte[] bytes = new byte[bb.readableBytes()];
-            bb.readBytes(bytes);
-            sink.next(bytes);
-          } catch (IllegalReferenceCountException e) {
-            sink.complete();
-          }
-        });
+    return map(bb -> bb.toString(charset));
   }
 
   /**
@@ -99,37 +55,6 @@ public final class ByteBufFlux extends FluxOperator<ByteBuf, ByteBuf> {
                 s -> {
                   ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
                   buffer.writeCharSequence(s, Charset.defaultCharset());
-                  return buffer;
-                }));
-  }
-
-  /**
-   * Decorate as {@link ByteBufFlux}.
-   *
-   * @param source publisher to decorate
-   * @return a {@link ByteBufFlux}
-   */
-  public static ByteBufFlux fromString(Publisher<String> source) {
-    return fromString(source, Charset.defaultCharset(), ByteBufAllocator.DEFAULT);
-  }
-
-  /**
-   * Decorate as {@link ByteBufFlux}.
-   *
-   * @param source publisher to decorate
-   * @param charset {@link Charset} instance
-   * @param allocator {@link ByteBufAllocator} instance
-   * @return a {@link ByteBufFlux}
-   */
-  public static ByteBufFlux fromString(
-      Publisher<String> source, Charset charset, ByteBufAllocator allocator) {
-    Objects.requireNonNull(allocator, "allocator");
-    return new ByteBufFlux(
-        Flux.from(source)
-            .map(
-                s -> {
-                  ByteBuf buffer = allocator.buffer();
-                  buffer.writeCharSequence(s, charset);
                   return buffer;
                 }));
   }

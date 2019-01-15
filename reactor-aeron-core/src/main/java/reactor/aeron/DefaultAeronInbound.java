@@ -5,7 +5,7 @@ import io.aeron.ImageFragmentAssembler;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.netty.buffer.ByteBuf;
-import java.nio.ByteBuffer;
+import io.netty.buffer.ByteBufAllocator;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.agrona.DirectBuffer;
@@ -33,6 +33,7 @@ final class DefaultAeronInbound implements AeronInbound {
   private final FragmentHandler fragmentHandler =
       new ImageFragmentAssembler(new InnerFragmentHandler());
   private final MessageSubscription subscription;
+  private final ByteBufAllocator byteBufAllocator = ByteBufAllocator.DEFAULT;
 
   private volatile long requested;
   private long produced;
@@ -95,15 +96,16 @@ final class DefaultAeronInbound implements AeronInbound {
     public void onFragment(DirectBuffer buffer, int offset, int length, Header header) {
       produced++;
 
-      ByteBuffer dstBuffer = ByteBuffer.allocate(length);
-      buffer.getBytes(offset, dstBuffer, length);
-      dstBuffer.flip();
+      ByteBuf byteBuf = byteBufAllocator.buffer(length);
 
-      CoreSubscriber<? super ByteBuf> destination =
-          DefaultAeronInbound.this.destinationSubscriber;
+      for (int i = offset; i < offset + length; i++) {
+        byteBuf.writeByte(buffer.getByte(i));
+      }
+
+      CoreSubscriber<? super ByteBuf> destination = DefaultAeronInbound.this.destinationSubscriber;
 
       // TODO check on cancel?
-      destination.onNext(dstBuffer);
+      destination.onNext(byteBuf);
     }
   }
 

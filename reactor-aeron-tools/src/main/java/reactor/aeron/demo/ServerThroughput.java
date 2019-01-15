@@ -1,5 +1,6 @@
 package reactor.aeron.demo;
 
+import io.netty.util.ReferenceCountUtil;
 import java.util.Iterator;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -12,6 +13,10 @@ import reactor.core.scheduler.Schedulers;
 public class ServerThroughput {
 
   static final int SLIDING_AVG_DURATION_SEC = 5;
+
+  static {
+    System.setProperty("io.netty.leakDetection.level", "PARANOID");
+  }
 
   static class Data {
 
@@ -71,9 +76,11 @@ public class ServerThroughput {
                       .receive()
                       .doOnNext(
                           buffer -> {
-                            int size = buffer.remaining();
+                            int size = buffer.readableBytes();
+                            System.err.println(size);
                             queue.add(new Data(now(), size));
                             counter.addAndGet(size);
+                            ReferenceCountUtil.safeRelease(buffer);
                           })
                       .then(connection.onDispose()))
           .bind()

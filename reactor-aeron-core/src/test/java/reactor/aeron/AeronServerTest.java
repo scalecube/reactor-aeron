@@ -2,7 +2,7 @@ package reactor.aeron;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.nio.ByteBuffer;
+import io.netty.buffer.ByteBuf;
 import java.time.Duration;
 import java.util.function.Function;
 import org.junit.jupiter.api.AfterEach;
@@ -61,7 +61,7 @@ class AeronServerTest extends BaseAeronTest {
 
   @Test
   public void testServerDisconnectsClientsUponShutdown() throws InterruptedException {
-    ReplayProcessor<ByteBuffer> processor = ReplayProcessor.create();
+    ReplayProcessor<ByteBuf> processor = ReplayProcessor.create();
 
     OnDisposable server =
         createServer(

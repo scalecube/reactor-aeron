@@ -7,6 +7,10 @@ import reactor.core.publisher.Flux;
 
 public class ServerServerSends {
 
+  static {
+    System.setProperty("io.netty.leakDetection.level", "PARANOID");
+  }
+
   /**
    * Main runner.
    *

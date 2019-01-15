@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.nio.ByteBuffer;
+import io.netty.buffer.ByteBuf;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -64,7 +64,7 @@ public class AeronConnectionTest extends BaseAeronTest {
   @Test
   public void testServerDisconnectsSessionAndClientHandleUnavailableImage()
       throws InterruptedException {
-    ReplayProcessor<ByteBuffer> processor = ReplayProcessor.create();
+    ReplayProcessor<ByteBuf> processor = ReplayProcessor.create();
     CountDownLatch latch = new CountDownLatch(1);
 
     createServer(
@@ -162,7 +162,7 @@ public class AeronConnectionTest extends BaseAeronTest {
     client
         .outbound()
         .send(
-            Mono.<ByteBuffer>never()
+            Mono.<ByteBuf>never()
                 .log("CLIENT_OUTBOUND_SEND")
                 .doFinally(s -> clientConnectionLatch.countDown()))
         .then()
@@ -209,7 +209,7 @@ public class AeronConnectionTest extends BaseAeronTest {
               .subscribe();
           c.outbound()
               .send(
-                  Mono.<ByteBuffer>never()
+                  Mono.<ByteBuf>never()
                       .log("SERVER_OUTBOUND_SEND")
                       .doFinally(s -> serverConnectionLatch.countDown()))
               .then()

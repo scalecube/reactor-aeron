@@ -1,13 +1,15 @@
 package reactor.aeron.demo;
 
-import java.nio.ByteBuffer;
+import java.util.Random;
 import reactor.aeron.AeronClient;
 import reactor.aeron.AeronResources;
 import reactor.core.publisher.Flux;
 
 public class ClientThroughput {
 
-  private static final String HOST = "localhost";
+  static {
+    System.setProperty("io.netty.leakDetection.level", "PARANOID");
+  }
 
   /**
    * Main runner.
@@ -17,7 +19,10 @@ public class ClientThroughput {
   public static void main(String[] args) throws Exception {
     AeronResources aeronResources = AeronResources.start();
     try {
-      ByteBuffer buffer = ByteBuffer.allocate(1024);
+      byte[] bytes = new byte[1024];
+      Random random = new Random();
+      random.nextBytes(bytes);
+      String msg = new String(bytes);
 
       AeronClient.create(aeronResources)
           .options("localhost", 13000, 13001)
@@ -25,12 +30,12 @@ public class ClientThroughput {
               connection ->
                   connection
                       .outbound()
-                      .send(
+                      .sendString(
                           Flux.create(
                               sink -> {
                                 System.out.println("About to send");
                                 for (int i = 0; i < 10_000 * 1024; i++) {
-                                  sink.next(buffer);
+                                  sink.next(msg);
                                 }
                                 sink.complete();
                                 System.out.println("Send complete");

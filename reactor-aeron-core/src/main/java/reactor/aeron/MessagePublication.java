@@ -248,15 +248,20 @@ class MessagePublication implements OnDisposable {
    */
   private class PublishTask {
 
-    private final ByteBuf msgBody;
+    private final ByteBuf content;
     private final MonoSink<Void> sink;
     private volatile boolean isDisposed = false;
 
     private long start;
 
-    private PublishTask(ByteBuf msgBody, MonoSink<Void> sink) {
-      this.msgBody = msgBody;
-      this.sink = sink.onDispose(() -> isDisposed = true);
+    private PublishTask(ByteBuf content, MonoSink<Void> sink) {
+      this.content = content;
+      this.sink =
+          sink.onDispose(
+              () -> {
+                isDisposed = true;
+                ByteBufUtil.safestRelease(content);
+              });
     }
 
     private long publish() {
@@ -268,26 +273,33 @@ class MessagePublication implements OnDisposable {
         start = System.currentTimeMillis();
       }
 
-      int msgLength = msgBody.remaining();
-      int position = msgBody.position();
-      int limit = msgBody.limit();
+      ByteBuffer msgBody = content.nioBuffer();
 
-      if (msgLength < publication.maxPayloadLength()) {
-        BufferClaim bufferClaim = bufferClaims.get();
-        long result = publication.tryClaim(msgLength, bufferClaim);
-        if (result > 0) {
-          try {
-            MutableDirectBuffer dstBuffer = bufferClaim.buffer();
-            int index = bufferClaim.offset();
-            dstBuffer.putBytes(index, msgBody, position, limit);
-            bufferClaim.commit();
-          } catch (Exception ex) {
-            bufferClaim.abort();
+      try {
+
+        int msgLength = msgBody.remaining();
+        int position = msgBody.position();
+        int limit = msgBody.limit();
+
+        if (msgLength < publication.maxPayloadLength()) {
+          BufferClaim bufferClaim = bufferClaims.get();
+          long result = publication.tryClaim(msgLength, bufferClaim);
+          if (result > 0) {
+            try {
+              MutableDirectBuffer dstBuffer = bufferClaim.buffer();
+              int index = bufferClaim.offset();
+              dstBuffer.putBytes(index, msgBody, position, limit);
+              bufferClaim.commit();
+            } catch (Exception ex) {
+              bufferClaim.abort();
+            }
           }
+          return result;
+        } else {
+          return publication.offer(new UnsafeBuffer(msgBody, position, limit));
         }
-        return result;
-      } else {
-        return publication.offer(new UnsafeBuffer(msgBody, position, limit));
+      } finally {
+        ByteBufUtil.safestRelease(content);
       }
     }
 
@@ -297,12 +309,14 @@ class MessagePublication implements OnDisposable {
 
     private void success() {
       if (!isDisposed) {
+        ByteBufUtil.safestRelease(content);
         sink.success();
       }
     }
 
     private void error(Throwable ex) {
       if (!isDisposed) {
+        ByteBufUtil.safestRelease(content);
         sink.error(ex);
       }
     }

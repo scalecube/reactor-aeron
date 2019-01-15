@@ -5,6 +5,10 @@ import reactor.aeron.AeronResources;
 
 public class ClientServerSends {
 
+  static {
+    System.setProperty("io.netty.leakDetection.level", "PARANOID");
+  }
+
   /**
    * Main runner.
    *
