@@ -58,7 +58,7 @@ class AeronClientTest extends BaseAeronTest {
         connection ->
             connection
                 .outbound()
-                .send(ByteBufferFlux.fromString("hello1", "2", "3").log("server"))
+                .send(ByteBufFlux.fromString("hello1", "2", "3").log("server"))
                 .then(connection.onDispose()));
 
     AeronConnection connection = createConnection();
@@ -79,7 +79,7 @@ class AeronClientTest extends BaseAeronTest {
         connection ->
             connection
                 .outbound()
-                .send(ByteBufferFlux.fromString(str, str, str).log("server"))
+                .send(ByteBufFlux.fromString(str, str, str).log("server"))
                 .then(connection.onDispose()));
 
     AeronConnection connection = createConnection();
@@ -97,7 +97,7 @@ class AeronClientTest extends BaseAeronTest {
         connection ->
             connection
                 .outbound()
-                .send(ByteBufferFlux.fromString("1", "2", "3").log("server"))
+                .send(ByteBufFlux.fromString("1", "2", "3").log("server"))
                 .then(connection.onDispose()));
 
     AeronConnection connection1 = createConnection();
@@ -169,7 +169,7 @@ class AeronClientTest extends BaseAeronTest {
 
     Flux.range(0, count)
         .flatMap(
-            i -> connection1.outbound().send(ByteBufferFlux.fromString("client_send:" + i)).then())
+            i -> connection1.outbound().send(ByteBufFlux.fromString("client_send:" + i)).then())
         .then()
         .subscribe();
 
@@ -273,7 +273,7 @@ class AeronClientTest extends BaseAeronTest {
         connection ->
             connection
                 .outbound()
-                .send(ByteBufferFlux.fromString("1", "2", "3").log("server"))
+                .send(ByteBufFlux.fromString("1", "2", "3").log("server"))
                 .then(connection.onDispose()));
 
     ReplayProcessor<String> processor1 = ReplayProcessor.create();

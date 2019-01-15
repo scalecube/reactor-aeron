@@ -51,8 +51,8 @@ final class DefaultAeronInbound implements AeronInbound {
   }
 
   @Override
-  public ByteBufferFlux receive() {
-    return new ByteBufferFlux(inbound);
+  public ByteBufFlux receive() {
+    return new ByteBufFlux(inbound);
   }
 
   int poll() {

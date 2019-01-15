@@ -4,7 +4,7 @@ import java.util.Objects;
 import reactor.aeron.AeronClient;
 import reactor.aeron.AeronConnection;
 import reactor.aeron.AeronResources;
-import reactor.aeron.ByteBufferFlux;
+import reactor.aeron.ByteBufFlux;
 
 public class ClientDemo {
 
@@ -25,7 +25,7 @@ public class ClientDemo {
                     System.out.println("Handler invoked");
                     return connection1
                         .outbound()
-                        .send(ByteBufferFlux.fromString("Hello", "world!").log("send"))
+                        .send(ByteBufFlux.fromString("Hello", "world!").log("send"))
                         .then(connection1.onDispose());
                   })
               .connect()

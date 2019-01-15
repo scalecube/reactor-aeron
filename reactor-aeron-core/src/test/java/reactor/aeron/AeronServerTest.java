@@ -52,7 +52,7 @@ class AeronServerTest extends BaseAeronTest {
 
     createConnection()
         .outbound()
-        .send(ByteBufferFlux.fromString("Hello", "world!").log("send"))
+        .send(ByteBufFlux.fromString("Hello", "world!").log("send"))
         .then()
         .subscribe();
 

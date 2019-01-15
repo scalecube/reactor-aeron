@@ -102,7 +102,7 @@ public class AeronConnectionTest extends BaseAeronTest {
                 connection
                     .outbound()
                     .send(
-                        ByteBufferFlux.fromString("hello1", "2", "3")
+                        ByteBufFlux.fromString("hello1", "2", "3")
                             .delayElements(Duration.ofSeconds(1))
                             .log("server1"))
                     .then(connection.onDispose()));
