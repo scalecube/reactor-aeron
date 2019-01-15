@@ -1,5 +1,8 @@
 package reactor.aeron.demo;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import java.nio.charset.Charset;
 import java.util.Random;
 import reactor.aeron.AeronClient;
 import reactor.aeron.AeronResources;
@@ -24,18 +27,21 @@ public class ClientThroughput {
       random.nextBytes(bytes);
       String msg = new String(bytes);
 
+      ByteBuf byteBuf = Unpooled.copiedBuffer(msg, Charset.defaultCharset());
+      System.err.println("created bb with " + byteBuf.readableBytes());
+
       AeronClient.create(aeronResources)
           .options("localhost", 13000, 13001)
           .handle(
               connection ->
                   connection
                       .outbound()
-                      .sendString(
+                      .send(
                           Flux.create(
                               sink -> {
                                 System.out.println("About to send");
                                 for (int i = 0; i < 10_000 * 1024; i++) {
-                                  sink.next(msg);
+                                  sink.next(byteBuf.retain());
                                 }
                                 sink.complete();
                                 System.out.println("Send complete");

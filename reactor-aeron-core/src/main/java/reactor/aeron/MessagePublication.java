@@ -273,7 +273,8 @@ class MessagePublication implements OnDisposable {
         start = System.currentTimeMillis();
       }
 
-      ByteBuffer msgBody = content.nioBuffer();
+      ByteBuf byteBuf = content.retain();
+      ByteBuffer msgBody = byteBuf.nioBuffer();
 
       try {
 
@@ -299,7 +300,7 @@ class MessagePublication implements OnDisposable {
           return publication.offer(new UnsafeBuffer(msgBody, position, limit));
         }
       } finally {
-        ByteBufUtil.safestRelease(content);
+        ByteBufUtil.safestRelease(byteBuf);
       }
     }
 
