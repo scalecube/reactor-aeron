@@ -33,7 +33,6 @@ final class DefaultAeronOutbound implements AeronOutbound {
             .map(
                 s -> {
                   ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
-
                   buffer.writeCharSequence(s, Charset.defaultCharset());
                   return buffer;
                 }));

@@ -77,7 +77,6 @@ public class ServerThroughput {
                       .doOnNext(
                           buffer -> {
                             int size = buffer.readableBytes();
-                            System.err.println(size);
                             queue.add(new Data(now(), size));
                             counter.addAndGet(size);
                             ReferenceCountUtil.safeRelease(buffer);
