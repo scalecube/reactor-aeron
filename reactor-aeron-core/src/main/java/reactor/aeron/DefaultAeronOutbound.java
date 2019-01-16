@@ -22,8 +22,8 @@ final class DefaultAeronOutbound implements AeronOutbound {
   }
 
   @Override
-  public AeronOutbound send(Publisher<? extends ByteBuf> dataStream) {
-    return then(sequencer.write(dataStream));
+  public AeronOutbound send(Publisher<? extends ByteBuf> source) {
+    return then(sequencer.write(source));
   }
 
   @Override

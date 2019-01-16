@@ -4,11 +4,11 @@ import io.netty.util.ReferenceCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-final class ByteBufUtil {
+final class RefCountUtil {
 
-  private static final Logger logger = LoggerFactory.getLogger(ByteBufUtil.class);
+  private static final Logger logger = LoggerFactory.getLogger(RefCountUtil.class);
 
-  private ByteBufUtil() {
+  private RefCountUtil() {
     // Do not instantiate
   }
 

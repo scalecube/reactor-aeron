@@ -3,12 +3,11 @@ package reactor.aeron;
 import io.aeron.Publication;
 import io.aeron.logbuffer.BufferClaim;
 import io.netty.buffer.ByteBuf;
-import java.nio.ByteBuffer;
+import io.netty.util.ByteProcessor;
 import java.time.Duration;
 import java.util.Queue;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.Exceptions;
@@ -260,7 +259,7 @@ class MessagePublication implements OnDisposable {
           sink.onDispose(
               () -> {
                 isDisposed = true;
-                ByteBufUtil.safestRelease(content);
+                RefCountUtil.safestRelease(content);
               });
     }
 
@@ -273,34 +272,26 @@ class MessagePublication implements OnDisposable {
         start = System.currentTimeMillis();
       }
 
-      ByteBuf byteBuf = content.retain();
-      ByteBuffer msgBody = byteBuf.nioBuffer();
+      int length = content.readableBytes();
 
-      try {
+      if (length < publication.maxPayloadLength()) {
+        BufferClaim bufferClaim = bufferClaims.get();
+        long result = publication.tryClaim(length, bufferClaim);
 
-        int msgLength = msgBody.remaining();
-        int position = msgBody.position();
-        int limit = msgBody.limit();
-
-        if (msgLength < publication.maxPayloadLength()) {
-          BufferClaim bufferClaim = bufferClaims.get();
-          long result = publication.tryClaim(msgLength, bufferClaim);
-          if (result > 0) {
-            try {
-              MutableDirectBuffer dstBuffer = bufferClaim.buffer();
-              int index = bufferClaim.offset();
-              dstBuffer.putBytes(index, msgBody, position, limit);
-              bufferClaim.commit();
-            } catch (Exception ex) {
-              bufferClaim.abort();
-            }
+        if (result > 0) {
+          try {
+            MutableDirectBuffer dstBuffer = bufferClaim.buffer();
+            int offset = bufferClaim.offset();
+            content.forEachByte(new ContentByteProcessor(dstBuffer, offset, length));
+            bufferClaim.commit();
+          } catch (Exception ex) {
+            bufferClaim.abort();
           }
-          return result;
-        } else {
-          return publication.offer(new UnsafeBuffer(msgBody, position, limit));
         }
-      } finally {
-        ByteBufUtil.safestRelease(byteBuf);
+        return result;
+      } else {
+        // return publication.offer(new UnsafeBuffer(, position, limit));
+        return -42; // TODO fix offer path
       }
     }
 
@@ -310,16 +301,35 @@ class MessagePublication implements OnDisposable {
 
     private void success() {
       if (!isDisposed) {
-        ByteBufUtil.safestRelease(content);
         sink.success();
       }
     }
 
     private void error(Throwable ex) {
       if (!isDisposed) {
-        ByteBufUtil.safestRelease(content);
         sink.error(ex);
       }
+    }
+  }
+
+  private static class ContentByteProcessor implements ByteProcessor {
+
+    final int length;
+    final int offset;
+    final MutableDirectBuffer dstBuffer;
+    int i;
+
+    ContentByteProcessor(MutableDirectBuffer dstBuffer, int offset, int length) {
+      this.length = length;
+      this.offset = offset;
+      this.dstBuffer = dstBuffer;
+    }
+
+    @Override
+    public boolean process(byte b) {
+      int index = offset + i;
+      dstBuffer.putByte(index, b);
+      return ++i < length;
     }
   }
 }
