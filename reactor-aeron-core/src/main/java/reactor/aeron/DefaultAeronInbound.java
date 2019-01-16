@@ -6,6 +6,7 @@ import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.Unpooled;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.agrona.DirectBuffer;
@@ -96,11 +97,10 @@ final class DefaultAeronInbound implements AeronInbound {
     public void onFragment(DirectBuffer buffer, int offset, int length, Header header) {
       produced++;
 
-      ByteBuf byteBuf = byteBufAllocator.buffer(length);
+      ByteBuf srcBuf = Unpooled.wrappedBuffer(buffer.addressOffset(), offset + length, false);
 
-      for (int i = offset; i < offset + length; i++) {
-        byteBuf.writeByte(buffer.getByte(i));
-      }
+      ByteBuf byteBuf = byteBufAllocator.buffer(length);
+      byteBuf.writeBytes(srcBuf, offset, length);
 
       CoreSubscriber<? super ByteBuf> destination = DefaultAeronInbound.this.destinationSubscriber;
 

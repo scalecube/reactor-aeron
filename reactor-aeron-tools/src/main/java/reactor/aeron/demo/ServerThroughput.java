@@ -55,7 +55,9 @@ public class ServerThroughput {
                   }
                 }
 
-                printRate(value);
+                System.out.printf(
+                    "Rate: %d MB/s, %ds avg rate: %d MB/s\n",
+                    toMb(value), SLIDING_AVG_DURATION_SEC, toMb(total) / SLIDING_AVG_DURATION_SEC);
               },
               1,
               1,
@@ -92,23 +94,5 @@ public class ServerThroughput {
 
   private static long toMb(long value) {
     return value / (1024 * 1024);
-  }
-
-  private static long toKb(long value) {
-    return value / 1024;
-  }
-
-  private static void printRate(long value) {
-    long rateInMb = toMb(value);
-    if (rateInMb > 0) {
-      System.out.printf(
-          "Rate: %d MB/s, %ds avg rate: %d MB/s\n",
-          rateInMb, SLIDING_AVG_DURATION_SEC, rateInMb / SLIDING_AVG_DURATION_SEC);
-    } else {
-      long rateInKb = toKb(value);
-      System.out.printf(
-          "Rate: %d kB/s, %ds avg rate: %d kB/s\n",
-          rateInKb, SLIDING_AVG_DURATION_SEC, rateInKb / SLIDING_AVG_DURATION_SEC);
-    }
   }
 }
