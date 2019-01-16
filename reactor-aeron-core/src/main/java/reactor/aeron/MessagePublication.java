@@ -3,7 +3,9 @@ package reactor.aeron;
 import io.aeron.Publication;
 import io.aeron.logbuffer.BufferClaim;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
 import io.netty.util.ByteProcessor;
+import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.Queue;
 import org.agrona.MutableDirectBuffer;
@@ -282,6 +284,9 @@ class MessagePublication implements OnDisposable {
           try {
             MutableDirectBuffer dstBuffer = bufferClaim.buffer();
             int offset = bufferClaim.offset();
+
+            //dstBuffer.putBytes(offset, content.nioBuffer(), length);
+
             content.forEachByte(new ContentByteProcessor(dstBuffer, offset, length));
             bufferClaim.commit();
           } catch (Exception ex) {
