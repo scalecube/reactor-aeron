@@ -38,7 +38,9 @@ public final class AeronResources implements OnDisposable {
       AeronResources::defaultBackoffIdleStrategy;
 
   private Aeron.Context aeronContext =
-      new Aeron.Context().errorHandler(th -> logger.warn("Aeron exception occurred: " + th, th));
+      new Aeron.Context()
+          .aeronDirectoryName(null)
+          .errorHandler(th -> logger.warn("Aeron exception occurred: " + th, th));
 
   private MediaDriver.Context mediaContext =
       new MediaDriver.Context()
@@ -275,9 +277,11 @@ public final class AeronResources implements OnDisposable {
   private Mono<Void> doStart() {
     return Mono.fromRunnable(
         () -> {
-          mediaDriver = MediaDriver.launchEmbedded(mediaContext);
+          if (aeronContext.aeronDirectoryName() == null) {
+            mediaDriver = MediaDriver.launchEmbedded(mediaContext);
 
-          aeronContext.aeronDirectoryName(mediaDriver.aeronDirectoryName());
+            aeronContext.aeronDirectoryName(mediaDriver.aeronDirectoryName());
+          }
 
           aeron = Aeron.connect(aeronContext);
 
