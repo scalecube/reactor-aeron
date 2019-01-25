@@ -25,10 +25,7 @@ public final class AeronPingClientSingleMD {
     AeronResources resources =
         new AeronResources()
             .useTmpDir()
-            .aeron(
-                ctx ->
-                    ctx.aeronDirectoryName(
-                        "/tmp/aeron-serhiihabryiel-f96de376-6443-4a73-9184-7a91a72263b2"))
+            .aeron(ctx -> ctx.aeronDirectoryName("/tmp/aeron-SingleMediaDriver"))
             .workerIdleStrategySupplier(BusySpinIdleStrategy::new)
             .singleWorker()
             .start()

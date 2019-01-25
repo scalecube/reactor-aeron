@@ -1,6 +1,5 @@
 package reactor.aeron.demo;
 
-import io.aeron.driver.ThreadingMode;
 import java.time.Duration;
 import org.agrona.concurrent.BusySpinIdleStrategy;
 import reactor.aeron.AeronResources;
@@ -17,11 +16,7 @@ public class ServerThroughputSingleMD {
     AeronResources aeronResources =
         new AeronResources()
             .useTmpDir()
-//            .aeron(ctx -> ctx.idleStrategy(new BusySpinIdleStrategy()))
-            .aeron(
-                ctx ->
-                    ctx.aeronDirectoryName(
-                        "/tmp/aeron-serhiihabryiel-c6cad9cc-7816-40d7-a792-eb00124e8a77"))
+            .aeron(ctx -> ctx.aeronDirectoryName("/tmp/aeron-SingleMediaDriver"))
             .workerIdleStrategySupplier(BusySpinIdleStrategy::new)
             .singleWorker()
             .start()

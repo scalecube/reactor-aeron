@@ -16,7 +16,9 @@ public final class SingleMediaDriver {
     new AeronResources()
         .numOfWorkers(0)
         .useTmpDir()
-        .media(ctx -> ctx.threadingMode(ThreadingMode.SHARED)
+        .media(ctx -> ctx
+            .aeronDirectoryName("/tmp/aeron-SingleMediaDriver")
+            .threadingMode(ThreadingMode.SHARED)
             .receiverIdleStrategy(new BusySpinIdleStrategy())
             .senderIdleStrategy(new BusySpinIdleStrategy())
             .conductorIdleStrategy(new BusySpinIdleStrategy()))
