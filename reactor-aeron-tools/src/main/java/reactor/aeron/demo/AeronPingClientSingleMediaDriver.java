@@ -11,7 +11,7 @@ import reactor.aeron.AeronResources;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-public final class AeronPingClientSingleMD {
+public final class AeronPingClientSingleMediaDriver {
 
   private static final Duration REPORT_INTERVAL = Duration.ofSeconds(1);
 
@@ -24,7 +24,7 @@ public final class AeronPingClientSingleMD {
 
     AeronResources resources =
         new AeronResources()
-            .useTmpDir()
+            .pollFragmentLimit(8)
             .aeron(ctx -> ctx.aeronDirectoryName("/tmp/aeron-SingleMediaDriver"))
             .workerIdleStrategySupplier(BusySpinIdleStrategy::new)
             .singleWorker()
@@ -50,7 +50,9 @@ public final class AeronPingClientSingleMD {
     // send current nano time as body
     connection
         .outbound()
-        .send(Mono.fromCallable(AeronPingClientSingleMD::generatePayload).repeat(Integer.MAX_VALUE))
+        .send(
+            Mono.fromCallable(AeronPingClientSingleMediaDriver::generatePayload)
+                .repeat(Integer.MAX_VALUE))
         .then()
         .doOnTerminate(connection::dispose)
         .doOnError(Throwable::printStackTrace)

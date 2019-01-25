@@ -4,7 +4,7 @@ import org.agrona.concurrent.BusySpinIdleStrategy;
 import reactor.aeron.AeronResources;
 import reactor.aeron.AeronServer;
 
-public final class AeronPongServerSingleMD {
+public final class AeronPongServerSingleMediaDriver {
 
   /**
    * Main runner.
@@ -14,7 +14,7 @@ public final class AeronPongServerSingleMD {
   public static void main(String... args) {
     AeronResources resources =
         new AeronResources()
-            .useTmpDir()
+            .pollFragmentLimit(8)
             .aeron(ctx -> ctx.aeronDirectoryName("/tmp/aeron-SingleMediaDriver"))
             .workerIdleStrategySupplier(BusySpinIdleStrategy::new)
             .singleWorker()

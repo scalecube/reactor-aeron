@@ -8,7 +8,7 @@ import reactor.aeron.AeronClient;
 import reactor.aeron.AeronResources;
 import reactor.core.publisher.Flux;
 
-public class ClientThroughputSingleMD {
+public class ClientThroughputSingleMediaDriver {
 
   /**
    * Main runner.
@@ -18,7 +18,7 @@ public class ClientThroughputSingleMD {
   public static void main(String[] args) {
     AeronResources aeronResources =
         new AeronResources()
-            .useTmpDir()
+            .pollFragmentLimit(8)
             .aeron(ctx -> ctx.aeronDirectoryName("/tmp/aeron-SingleMediaDriver"))
             .workerIdleStrategySupplier(BusySpinIdleStrategy::new)
             .singleWorker()
