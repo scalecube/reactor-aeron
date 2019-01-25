@@ -33,7 +33,9 @@ public final class AeronResources implements OnDisposable {
   private int numOfWorkers = Runtime.getRuntime().availableProcessors();
 
   private Aeron.Context aeronContext =
-      new Aeron.Context().errorHandler(th -> logger.warn("Aeron exception occurred: " + th, th));
+      new Aeron.Context()
+          .aeronDirectoryName(null)
+          .errorHandler(th -> logger.warn("Aeron exception occurred: " + th, th));
 
   private MediaDriver.Context mediaContext =
       new MediaDriver.Context()
@@ -283,18 +285,21 @@ public final class AeronResources implements OnDisposable {
   private Mono<Void> doStart() {
     return Mono.fromRunnable(
         () -> {
-          mediaDriver = MediaDriver.launchEmbedded(mediaContext);
+          boolean embeddedMediaDriver = aeronContext.aeronDirectoryName() == null;
+          if (embeddedMediaDriver) {
+            mediaDriver = MediaDriver.launchEmbedded(mediaContext);
 
-          aeronContext.aeronDirectoryName(mediaDriver.aeronDirectoryName());
+            aeronContext.aeronDirectoryName(mediaDriver.aeronDirectoryName());
+
+            Runtime.getRuntime()
+                .addShutdownHook(
+                    new Thread(() -> deleteAeronDirectory(aeronContext.aeronDirectory())));
+          }
 
           aeron = Aeron.connect(aeronContext);
 
           eventLoopGroup =
               new AeronEventLoopGroup("reactor-aeron", numOfWorkers, workerIdleStrategySupplier);
-
-          Runtime.getRuntime()
-              .addShutdownHook(
-                  new Thread(() -> deleteAeronDirectory(aeronContext.aeronDirectory())));
 
           logger.debug(
               "{} has initialized embedded media driver, aeron directory: {}",
@@ -494,10 +499,13 @@ public final class AeronResources implements OnDisposable {
                   s -> {
                     CloseHelper.quietClose(aeron);
 
-                    CloseHelper.quietClose(mediaDriver);
+                    boolean embeddedMediaDriver = mediaDriver != null;
+                    if (embeddedMediaDriver) {
+                      CloseHelper.quietClose(mediaDriver);
 
-                    Optional.ofNullable(aeronContext)
-                        .ifPresent(c -> IoUtil.delete(c.aeronDirectory(), true));
+                      Optional.ofNullable(aeronContext)
+                          .ifPresent(c -> IoUtil.delete(c.aeronDirectory(), true));
+                    }
                   });
         });
   }
