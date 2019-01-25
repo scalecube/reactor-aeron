@@ -16,8 +16,6 @@ import reactor.core.publisher.Operators;
 
 final class DefaultAeronInbound implements AeronInbound {
 
-  private static final int MAX_FRAGMENT_LIMIT = 8;
-
   private static final AtomicLongFieldUpdater<DefaultAeronInbound> REQUESTED =
       AtomicLongFieldUpdater.newUpdater(DefaultAeronInbound.class, "requested");
 
@@ -26,6 +24,7 @@ final class DefaultAeronInbound implements AeronInbound {
           AtomicReferenceFieldUpdater.newUpdater(
               DefaultAeronInbound.class, CoreSubscriber.class, "destinationSubscriber");
 
+  private final int fragmentLimit;
   private final Image image;
   private final AeronEventLoop eventLoop;
   private final FluxReceive inbound = new FluxReceive();
@@ -44,11 +43,14 @@ final class DefaultAeronInbound implements AeronInbound {
    * @param image image
    * @param eventLoop event loop
    * @param subscription subscription
+   * @param fragmentLimit fragment limit
    */
-  DefaultAeronInbound(Image image, AeronEventLoop eventLoop, MessageSubscription subscription) {
+  DefaultAeronInbound(
+      Image image, AeronEventLoop eventLoop, MessageSubscription subscription, int fragmentLimit) {
     this.image = image;
     this.eventLoop = eventLoop;
     this.subscription = subscription;
+    this.fragmentLimit = fragmentLimit;
   }
 
   @Override
@@ -58,9 +60,9 @@ final class DefaultAeronInbound implements AeronInbound {
 
   int poll() {
     if (fastpath) {
-      return image.poll(fragmentHandler, MAX_FRAGMENT_LIMIT);
+      return image.poll(fragmentHandler, fragmentLimit);
     }
-    int r = (int) Math.min(requested, MAX_FRAGMENT_LIMIT);
+    int r = (int) Math.min(requested, fragmentLimit);
     int fragments = 0;
     if (r > 0) {
       fragments = image.poll(fragmentHandler, r);
@@ -101,7 +103,6 @@ final class DefaultAeronInbound implements AeronInbound {
       CoreSubscriber<? super DirectBuffer> destination =
           DefaultAeronInbound.this.destinationSubscriber;
 
-      // TODO check on cancel?
       destination.onNext(new UnsafeBuffer(buffer, offset, length));
     }
   }

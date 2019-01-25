@@ -1,5 +1,6 @@
 package reactor.aeron;
 
+import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -7,6 +8,9 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.function.Consumer;
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
+import javax.management.StandardMBean;
 import org.agrona.concurrent.IdleStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,13 +66,20 @@ final class AeronEventLoop implements OnDisposable {
     };
   }
 
-  private Worker createWorker() {
+  private Worker createWorker() throws Exception {
     String threadName = String.format("%s-%x-%d", name, groupId, workerId);
     ThreadFactory threadFactory = defaultThreadFactory(threadName);
-    Worker w = new Worker();
-    thread = threadFactory.newThread(w);
+    Worker worker = new Worker();
+
+    MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
+    ObjectName objectName = new ObjectName("reactor.aeron:name=" + threadName);
+    StandardMBean standardMBean = new StandardMBean(worker, WorkerMBean.class);
+    mbeanServer.registerMBean(standardMBean, objectName);
+
+    thread = threadFactory.newThread(worker);
     thread.start();
-    return w;
+
+    return worker;
   }
 
   /**
@@ -254,6 +265,21 @@ final class AeronEventLoop implements OnDisposable {
   }
 
   /**
+   * JMX MBean exposer class for event loop worker thread, for {@link Worker}. Contains various
+   * runtime stats.
+   */
+  public interface WorkerMBean {
+
+    long getTicks();
+
+    double getOutboundRate();
+
+    double getInboundRate();
+
+    double getIdleRate();
+  }
+
+  /**
    * Runnable event loop worker. Does a following:
    *
    * <ul>
@@ -262,36 +288,77 @@ final class AeronEventLoop implements OnDisposable {
    *   <li>idles on negative progress
    * </ul>
    */
-  private class Worker implements Runnable {
+  private class Worker implements Runnable, WorkerMBean {
+
+    private static final int REPORT_INTERVAL = 1000;
+
+    // Reporting
+
+    private long ticks;
+    private double outboundRate;
+    private double inboundRate;
+    private double idleRate;
+
+    private long lastTotalTicks;
+    private long lastTotalOutbounds;
+    private long lastTotalInbounds;
+    private long lastTotalIdles;
+
+    @Override
+    public long getTicks() {
+      return ticks;
+    }
+
+    @Override
+    public double getOutboundRate() {
+      return outboundRate;
+    }
+
+    @Override
+    public double getInboundRate() {
+      return inboundRate;
+    }
+
+    @Override
+    public double getIdleRate() {
+      return idleRate;
+    }
 
     @Override
     public void run() {
+      long totalTicks = 0;
+      long totalOutbounds = 0; // % out >>
+      long totalInbounds = 0; // % receive <<
+      long totalIdles = 0; // % idle
+
+      long reportTime = System.currentTimeMillis() + REPORT_INTERVAL;
+
       // Process commands, publications and subscriptions
       while (!dispose.isDisposed()) {
+
+        totalTicks++;
 
         // Commands
         processCommands();
 
-        int result = 0;
-        //noinspection ForLoopReplaceableByForEach
-        for (int i = 0, n = publications.size(); i < n; i++) {
-          try {
-            result += publications.get(i).proceed();
-          } catch (Exception ex) {
-            logger.error("Unexpected exception occurred on publication.proceed(): ", ex);
-          }
+        int outCount = processOutbound();
+        totalOutbounds += outCount;
+
+        int inCount = processInbound();
+        totalInbounds += inCount;
+
+        int workCount = outCount + inCount;
+        if (workCount < 1) {
+          totalIdles++;
         }
 
-        //noinspection ForLoopReplaceableByForEach
-        for (int i = 0, n = inbounds.size(); i < n; i++) {
-          try {
-            result += inbounds.get(i).poll();
-          } catch (Exception ex) {
-            logger.error("Unexpected exception occurred on inbound.poll(): ", ex);
-          }
+        long currentTime = System.currentTimeMillis();
+        if (currentTime >= reportTime) {
+          reportTime = currentTime + REPORT_INTERVAL;
+          processReporting(totalTicks, totalOutbounds, totalInbounds, totalIdles);
         }
 
-        idleStrategy.idle(result);
+        idleStrategy.idle(workCount);
       }
 
       // Dispose publications, subscriptions, inbounds and commands
@@ -303,6 +370,45 @@ final class AeronEventLoop implements OnDisposable {
       } finally {
         onDispose.onComplete();
       }
+    }
+
+    private int processInbound() {
+      int result = 0;
+      //noinspection ForLoopReplaceableByForEach
+      for (int i = 0, n = inbounds.size(); i < n; i++) {
+        try {
+          result += inbounds.get(i).poll();
+        } catch (Exception ex) {
+          logger.error("Unexpected exception occurred on inbound.poll(): ", ex);
+        }
+      }
+      return result;
+    }
+
+    private int processOutbound() {
+      int result = 0;
+      //noinspection ForLoopReplaceableByForEach
+      for (int i = 0, n = publications.size(); i < n; i++) {
+        try {
+          result += publications.get(i).proceed();
+        } catch (Exception ex) {
+          logger.error("Unexpected exception occurred on publication.proceed(): ", ex);
+        }
+      }
+      return result;
+    }
+
+    private void processReporting(
+        long totalTicks, long totalOutbounds, long totalInbounds, long totalIdles) {
+      ticks = totalTicks - lastTotalTicks;
+      outboundRate = (double) (totalOutbounds - lastTotalOutbounds) / ticks;
+      inboundRate = (double) (totalInbounds - lastTotalInbounds) / ticks;
+      idleRate = (double) (totalIdles - lastTotalIdles) / ticks;
+
+      lastTotalTicks = totalTicks;
+      lastTotalOutbounds = totalOutbounds;
+      lastTotalInbounds = totalInbounds;
+      lastTotalIdles = totalIdles;
     }
 
     private void processCommands() {

@@ -13,7 +13,7 @@ import java.util.function.Supplier;
  */
 public final class SecureRandomSessionIdGenerator implements Supplier<Integer> {
 
-  private final SecureRandom random = new SecureRandom(SecureRandom.getSeed(128));
+  private final SecureRandom random = new SecureRandom();
 
   @Override
   public Integer get() {
