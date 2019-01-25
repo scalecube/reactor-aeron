@@ -20,7 +20,6 @@ public class ClientThroughput {
         new AeronResources()
             .useTmpDir()
             .media(ctx -> ctx.threadingMode(ThreadingMode.SHARED))
-            .singleWorker()
             .start()
             .block();
 

@@ -16,7 +16,6 @@ public final class AeronPongServer {
         new AeronResources()
             .useTmpDir()
             .media(ctx -> ctx.threadingMode(ThreadingMode.SHARED))
-            .singleWorker()
             .start()
             .block();
 
