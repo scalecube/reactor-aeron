@@ -93,14 +93,16 @@ public final class AeronResources implements OnDisposable {
    * @param ac aeron context
    * @param mdc media driver context
    */
-  private AeronResources(Aeron.Context ac, MediaDriver.Context mdc) {
+  private AeronResources(AeronResources that, Aeron.Context ac, MediaDriver.Context mdc) {
     this();
+    this.numOfWorkers = that.numOfWorkers;
+    this.workerIdleStrategySupplier = that.workerIdleStrategySupplier;
     copy(ac);
     copy(mdc);
   }
 
   private AeronResources copy() {
-    return new AeronResources(aeronContext, mediaContext);
+    return new AeronResources(this, aeronContext, mediaContext);
   }
 
   private void copy(MediaDriver.Context mdc) {
@@ -204,7 +206,7 @@ public final class AeronResources implements OnDisposable {
   public AeronResources aeron(UnaryOperator<Aeron.Context> o) {
     AeronResources c = copy();
     Aeron.Context ac = o.apply(c.aeronContext);
-    return new AeronResources(ac, c.mediaContext);
+    return new AeronResources(this, ac, c.mediaContext);
   }
 
   /**
@@ -216,7 +218,7 @@ public final class AeronResources implements OnDisposable {
   public AeronResources media(UnaryOperator<MediaDriver.Context> o) {
     AeronResources c = copy();
     MediaDriver.Context mdc = o.apply(c.mediaContext);
-    return new AeronResources(c.aeronContext, mdc);
+    return new AeronResources(this, c.aeronContext, mdc);
   }
 
   /**
