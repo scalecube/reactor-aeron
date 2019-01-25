@@ -2,6 +2,7 @@ package reactor.aeron.demo;
 
 import java.nio.ByteBuffer;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.agrona.concurrent.UnsafeBuffer;
 import reactor.aeron.AeronClient;
 import reactor.aeron.AeronResources;
@@ -18,10 +19,13 @@ public class ClientThroughputSingleMD {
     AeronResources aeronResources =
         new AeronResources()
             .useTmpDir()
+//            .aeron(ctx -> ctx.idleStrategy(new BusySpinIdleStrategy()))
             .aeron(
                 ctx ->
                     ctx.aeronDirectoryName(
-                        "/var/folders/tx/11bk01r93rv4nhblfzfpmdhr0000gn/T/aeron-segabriel-1df4c987-3526-44d1-a11d-c6697b5fc9fc"))
+                        "/tmp/aeron-serhiihabryiel-c6cad9cc-7816-40d7-a792-eb00124e8a77"))
+            .workerIdleStrategySupplier(BusySpinIdleStrategy::new)
+            .singleWorker()
             .start()
             .block();
 

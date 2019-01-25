@@ -26,6 +26,7 @@ public final class AeronPingClient {
         new AeronResources()
             .useTmpDir()
             .media(ctx -> ctx.threadingMode(ThreadingMode.SHARED))
+            .singleWorker()
             .start()
             .block();
 

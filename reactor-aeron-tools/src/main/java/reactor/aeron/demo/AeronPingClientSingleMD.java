@@ -4,6 +4,7 @@ import java.time.Duration;
 import org.HdrHistogram.Recorder;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
+import org.agrona.concurrent.BusySpinIdleStrategy;
 import reactor.aeron.AeronClient;
 import reactor.aeron.AeronConnection;
 import reactor.aeron.AeronResources;
@@ -27,7 +28,9 @@ public final class AeronPingClientSingleMD {
             .aeron(
                 ctx ->
                     ctx.aeronDirectoryName(
-                        "/var/folders/tx/11bk01r93rv4nhblfzfpmdhr0000gn/T/aeron-segabriel-bd072f46-5cfe-49ee-b10f-09a1d3ad7f1a"))
+                        "/tmp/aeron-serhiihabryiel-f96de376-6443-4a73-9184-7a91a72263b2"))
+            .workerIdleStrategySupplier(BusySpinIdleStrategy::new)
+            .singleWorker()
             .start()
             .block();
 

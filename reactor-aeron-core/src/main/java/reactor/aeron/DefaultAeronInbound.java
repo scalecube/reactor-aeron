@@ -16,7 +16,7 @@ import reactor.core.publisher.Operators;
 
 final class DefaultAeronInbound implements AeronInbound {
 
-  private static final int MAX_FRAGMENT_LIMIT = 8192;
+  private static final int MAX_FRAGMENT_LIMIT = 8;
 
   private static final AtomicLongFieldUpdater<DefaultAeronInbound> REQUESTED =
       AtomicLongFieldUpdater.newUpdater(DefaultAeronInbound.class, "requested");
