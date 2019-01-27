@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoProcessor;
 import reactor.core.scheduler.Schedulers;
+import reactor.util.concurrent.Queues;
 
 public final class AeronResources implements OnDisposable {
 
@@ -30,6 +31,8 @@ public final class AeronResources implements OnDisposable {
   // Settings
 
   private int pollFragmentLimit = 8192;
+  private int publicationPendingLimit = 8192;
+  private int requestPendingCount = Queues.SMALL_BUFFER_SIZE;
   private int numOfWorkers = Runtime.getRuntime().availableProcessors();
 
   private Aeron.Context aeronContext =
@@ -92,6 +95,8 @@ public final class AeronResources implements OnDisposable {
   private AeronResources(AeronResources that, Aeron.Context ac, MediaDriver.Context mdc) {
     this();
     this.pollFragmentLimit = that.pollFragmentLimit;
+    this.publicationPendingLimit = that.publicationPendingLimit;
+    this.requestPendingCount = that.requestPendingCount;
     this.numOfWorkers = that.numOfWorkers;
     this.workerIdleStrategySupplier = that.workerIdleStrategySupplier;
     copy(ac);
@@ -256,6 +261,30 @@ public final class AeronResources implements OnDisposable {
   }
 
   /**
+   * Settings pending task limit per publication.
+   *
+   * @param publicationPendingLimit pending task limit per publication
+   * @return new {@code AeronResources} object
+   */
+  public AeronResources publicationPendingLimit(int publicationPendingLimit) {
+    AeronResources c = copy();
+    c.publicationPendingLimit = publicationPendingLimit;
+    return c;
+  }
+
+  /**
+   * Settings pending task count per stream request.
+   *
+   * @param requestPendingCount pending task count per request
+   * @return new {@code AeronResources} object
+   */
+  public AeronResources requestPendingCount(int requestPendingCount) {
+    AeronResources c = copy();
+    c.requestPendingCount = requestPendingCount;
+    return c;
+  }
+
+  /**
    * Setter for supplier of {@code IdleStrategy} for worker thread(s).
    *
    * @param s supplier of {@code IdleStrategy} for worker thread(s)
@@ -371,7 +400,12 @@ public final class AeronResources implements OnDisposable {
                     aeronPublication ->
                         eventLoop
                             .registerPublication(
-                                new MessagePublication(aeronPublication, options, eventLoop))
+                                new MessagePublication(
+                                    aeronPublication,
+                                    options,
+                                    eventLoop,
+                                    requestPendingCount,
+                                    publicationPendingLimit))
                             .doOnError(
                                 ex -> {
                                   logger.error(

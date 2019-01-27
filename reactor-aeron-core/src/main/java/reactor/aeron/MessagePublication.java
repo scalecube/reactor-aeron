@@ -17,16 +17,14 @@ class MessagePublication implements OnDisposable {
 
   private static final Logger logger = LoggerFactory.getLogger(MessagePublication.class);
 
-  private static final int QUEUE_CAPACITY = 8192;
-
   private final Publication publication;
   private final AeronEventLoop eventLoop;
   private final Duration connectTimeout;
   private final Duration backpressureTimeout;
   private final Duration adminActionTimeout;
 
-  private final Queue<PublishTask> publishTasks =
-      new ManyToOneConcurrentArrayQueue<>(QUEUE_CAPACITY);
+  private final Queue<PublishTask> publishTasks;
+  private final int requestPendingCount;
 
   private final MonoProcessor<Void> onDispose = MonoProcessor.create();
 
@@ -36,13 +34,22 @@ class MessagePublication implements OnDisposable {
    * @param publication aeron publication
    * @param options aeron options
    * @param eventLoop aeron event loop where this {@code MessagePublication} is assigned
+   * @param requestPendingCount pending task count per request
+   * @param publicationPendingLimit pending task limit per publication
    */
-  MessagePublication(Publication publication, AeronOptions options, AeronEventLoop eventLoop) {
+  MessagePublication(
+      Publication publication,
+      AeronOptions options,
+      AeronEventLoop eventLoop,
+      int requestPendingCount,
+      int publicationPendingLimit) {
     this.publication = publication;
     this.eventLoop = eventLoop;
     this.connectTimeout = options.connectTimeout();
     this.backpressureTimeout = options.backpressureTimeout();
     this.adminActionTimeout = options.adminActionTimeout();
+    this.publishTasks = new ManyToOneConcurrentArrayQueue<>(publicationPendingLimit);
+    this.requestPendingCount = requestPendingCount;
   }
 
   /**
@@ -173,6 +180,10 @@ class MessagePublication implements OnDisposable {
    */
   int sessionId() {
     return publication.sessionId();
+  }
+
+  int requestPendingCount() {
+    return requestPendingCount;
   }
 
   /**

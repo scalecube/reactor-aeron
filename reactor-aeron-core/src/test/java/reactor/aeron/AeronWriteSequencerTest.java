@@ -38,6 +38,7 @@ class AeronWriteSequencerTest {
   @BeforeEach
   void setUp() {
     this.messagePublication = Mockito.mock(MessagePublication.class);
+    Mockito.when(messagePublication.requestPendingCount()).thenReturn(PREFETCH);
     this.aeronWriteSequencer = new AeronWriteSequencer(messagePublication);
   }
 
