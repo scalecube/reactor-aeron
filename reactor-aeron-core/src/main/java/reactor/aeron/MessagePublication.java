@@ -34,22 +34,18 @@ class MessagePublication implements OnDisposable {
    * @param publication aeron publication
    * @param options aeron options
    * @param eventLoop aeron event loop where this {@code MessagePublication} is assigned
-   * @param requestPendingCount pending task count per request
-   * @param publicationPendingLimit pending task limit per publication
    */
   MessagePublication(
       Publication publication,
       AeronOptions options,
-      AeronEventLoop eventLoop,
-      int requestPendingCount,
-      int publicationPendingLimit) {
+      AeronEventLoop eventLoop) {
     this.publication = publication;
     this.eventLoop = eventLoop;
     this.connectTimeout = options.connectTimeout();
     this.backpressureTimeout = options.backpressureTimeout();
     this.adminActionTimeout = options.adminActionTimeout();
-    this.publishTasks = new ManyToOneConcurrentArrayQueue<>(publicationPendingLimit);
-    this.requestPendingCount = requestPendingCount;
+    this.publishTasks = new ManyToOneConcurrentArrayQueue<>(options.publicationPendingLimit());
+    this.requestPendingCount = options.requestPendingCount();
   }
 
   /**

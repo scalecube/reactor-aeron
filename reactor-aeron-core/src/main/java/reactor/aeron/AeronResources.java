@@ -272,6 +272,10 @@ public final class AeronResources implements OnDisposable {
     return c;
   }
 
+  int publicationPendingLimit() {
+    return publicationPendingLimit;
+  }
+
   /**
    * Settings pending task count per stream request.
    *
@@ -282,6 +286,10 @@ public final class AeronResources implements OnDisposable {
     AeronResources c = copy();
     c.requestPendingCount = requestPendingCount;
     return c;
+  }
+
+  int requestPendingCount() {
+    return requestPendingCount;
   }
 
   /**
@@ -400,12 +408,7 @@ public final class AeronResources implements OnDisposable {
                     aeronPublication ->
                         eventLoop
                             .registerPublication(
-                                new MessagePublication(
-                                    aeronPublication,
-                                    options,
-                                    eventLoop,
-                                    requestPendingCount,
-                                    publicationPendingLimit))
+                                new MessagePublication(aeronPublication, options, eventLoop))
                             .doOnError(
                                 ex -> {
                                   logger.error(

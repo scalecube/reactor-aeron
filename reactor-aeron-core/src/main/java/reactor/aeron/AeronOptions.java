@@ -110,6 +110,14 @@ public final class AeronOptions {
     return set(s -> s.sessionIdGenerator = sessionIdGenerator);
   }
 
+  public int publicationPendingLimit() {
+    return resources.publicationPendingLimit();
+  }
+
+  public int requestPendingCount() {
+    return resources.requestPendingCount();
+  }
+
   private AeronOptions set(Consumer<AeronOptions> c) {
     AeronOptions s = new AeronOptions(this);
     c.accept(s);
