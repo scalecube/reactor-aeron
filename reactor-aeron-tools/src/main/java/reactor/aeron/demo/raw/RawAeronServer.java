@@ -7,8 +7,7 @@ import io.aeron.Publication;
 import io.aeron.Subscription;
 import java.lang.management.ManagementFactory;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import javax.management.StandardMBean;
@@ -18,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.aeron.WorkerFlightRecorder;
 import reactor.aeron.WorkerMBean;
+import reactor.aeron.demo.raw.RawAeronResources.MsgPublication;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
@@ -45,7 +45,7 @@ abstract class RawAeronServer {
   private final Aeron aeron;
 
   private volatile Subscription acceptSubscription;
-  private final Map<Integer, Publication> publications = new ConcurrentHashMap<>();
+  private final List<MsgPublication> publications = new CopyOnWriteArrayList<>();
 
   private final Scheduler scheduler = Schedulers.newSingle(this.toString());
   private final IdleStrategy idleStrategy = new BackoffIdleStrategy(1, 1, 1, 100);
@@ -114,7 +114,7 @@ abstract class RawAeronServer {
         .schedule(
             () -> {
               Publication publication = aeron.addExclusivePublication(outboundChannel, STREAM_ID);
-              publications.put(sessionId, publication);
+              publications.add(new MsgPublication(sessionId, publication, 8));
             });
   }
 
@@ -126,10 +126,12 @@ abstract class RawAeronServer {
     Schedulers.single()
         .schedule(
             () -> {
-              Publication publication = publications.remove(sessionId);
-              if (publication != null) {
-                publication.close();
-              }
+              publications
+                  .stream()
+                  .filter(publication -> publication.sessionId() == sessionId)
+                  .findFirst()
+                  .ifPresent(MsgPublication::close);
+              publications.removeIf(msgPublication -> msgPublication.sessionId() == sessionId);
             });
   }
 
@@ -137,7 +139,7 @@ abstract class RawAeronServer {
     return 0;
   }
 
-  int processOutbound(Map<Integer, Publication> publications) {
+  int processOutbound(List<MsgPublication> publications) {
     return 0;
   }
 }

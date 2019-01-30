@@ -77,7 +77,7 @@ abstract class RawAeronClient {
                   this::onClientImageAvailable,
                   this::onClientImageUnavailable);
 
-          MsgPublication msgPublication = new MsgPublication(publication, writeLimit);
+          MsgPublication msgPublication = new MsgPublication(sessionId, publication, writeLimit);
 
           flightRecorder.start();
 

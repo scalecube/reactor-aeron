@@ -77,10 +77,12 @@ class RawAeronResources {
     private static final ThreadLocal<BufferClaim> bufferClaims =
         ThreadLocal.withInitial(BufferClaim::new);
 
+    private final int sessionId;
     private final Publication publication;
     private final int writeLimit;
 
-    MsgPublication(Publication publication, int writeLimit) {
+    MsgPublication(int sessionId, Publication publication, int writeLimit) {
+      this.sessionId = sessionId;
       this.publication = publication;
       this.writeLimit = writeLimit;
     }
@@ -139,6 +141,14 @@ class RawAeronResources {
       } else {
         return publication.offer(new UnsafeBuffer(buffer, 0, length));
       }
+    }
+
+    void close() {
+      publication.close();
+    }
+
+    int sessionId() {
+      return sessionId;
     }
   }
 }
