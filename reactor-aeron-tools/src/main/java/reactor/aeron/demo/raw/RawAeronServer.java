@@ -114,7 +114,7 @@ abstract class RawAeronServer {
         .schedule(
             () -> {
               Publication publication = aeron.addExclusivePublication(outboundChannel, STREAM_ID);
-              publications.add(new MsgPublication(sessionId, publication, 8));
+              publications.add(new MsgPublication(sessionId, publication));
             });
   }
 

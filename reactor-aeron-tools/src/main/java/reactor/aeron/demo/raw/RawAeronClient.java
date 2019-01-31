@@ -45,7 +45,6 @@ abstract class RawAeronClient {
 
   private final IdleStrategy idleStrategy = new BackoffIdleStrategy(1, 1, 1, 100);
   private final WorkerFlightRecorder flightRecorder;
-  private final int writeLimit = 32;
   private Scheduler scheduler;
 
   RawAeronClient(Aeron aeron) throws Exception {
@@ -77,7 +76,7 @@ abstract class RawAeronClient {
                   this::onClientImageAvailable,
                   this::onClientImageUnavailable);
 
-          MsgPublication msgPublication = new MsgPublication(sessionId, publication, writeLimit);
+          MsgPublication msgPublication = new MsgPublication(sessionId, publication);
 
           flightRecorder.start();
 

@@ -79,43 +79,21 @@ class RawAeronResources {
 
     private final int sessionId;
     private final Publication publication;
-    private final int writeLimit;
 
-    MsgPublication(int sessionId, Publication publication, int writeLimit) {
+    MsgPublication(int sessionId, Publication publication) {
       this.sessionId = sessionId;
       this.publication = publication;
-      this.writeLimit = writeLimit;
     }
 
     int proceed(DirectBuffer buffer) {
-      int result = 0;
-      for (int i = 0, current; i < writeLimit; i++) {
-        current = proceed0(buffer);
-        if (current < 1) {
-          break;
-        }
-        result += current;
-      }
-      return result;
-    }
-
-    private int proceed0(DirectBuffer buffer) {
       long result = publish(buffer);
 
       if (result > 0) {
         return 1;
       }
 
-      // Handle closed publication
-      if (result == Publication.CLOSED) {
-        logger.warn("aeron.Publication is CLOSED: {}", this);
-        return 0;
-      }
-
-      // Handle max position exceeded
-      if (result == Publication.MAX_POSITION_EXCEEDED) {
-        logger.warn("aeron.Publication received MAX_POSITION_EXCEEDED: {}", this);
-        return 0;
+      if (result != Publication.BACK_PRESSURED && result != Publication.ADMIN_ACTION) {
+        logger.warn("aeron.Publication received result: {}", result);
       }
       return 0;
     }

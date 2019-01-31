@@ -14,6 +14,9 @@ import reactor.aeron.demo.raw.RawAeronResources.MsgPublication;
 public class RawAeronServerPong {
 
   private static final Logger logger = LoggerFactory.getLogger(RawAeronServerPong.class);
+  private static final int QUEUE_CAPACITY = 8192;
+  private static final int MAX_POLL_FRAGMENT_LIMIT = 8;
+  private static final int MAX_WRITE_LIMIT = 8;
 
   /**
    * Main runner.
@@ -27,7 +30,7 @@ public class RawAeronServerPong {
 
   private static class Server extends RawAeronServer {
 
-    Queue<DirectBuffer> queue = new OneToOneConcurrentArrayQueue<>(1024 * 1024 * 25);
+    Queue<DirectBuffer> queue = new OneToOneConcurrentArrayQueue<>(QUEUE_CAPACITY);
 
     Server(Aeron aeron) throws Exception {
       super(aeron);
@@ -36,15 +39,17 @@ public class RawAeronServerPong {
     @Override
     int processInbound(List<Image> images) {
       int result = 0;
-      for (Image image : images) {
-        try {
-          result +=
-              image.poll(
-                  (buffer, offset, length, header) ->
-                      queue.add(new UnsafeBuffer(buffer, offset, length)),
-                  8);
-        } catch (Exception ex) {
-          logger.error("Unexpected exception occurred on inbound.poll(): ", ex);
+      if (queue.size() <= QUEUE_CAPACITY - MAX_POLL_FRAGMENT_LIMIT) {
+        for (Image image : images) {
+          try {
+            result +=
+                image.poll(
+                    (buffer, offset, length, header) ->
+                        queue.add(new UnsafeBuffer(buffer, offset, length)),
+                    MAX_POLL_FRAGMENT_LIMIT);
+          } catch (Exception ex) {
+            logger.error("Unexpected exception occurred on inbound.poll(): ", ex);
+          }
         }
       }
       return result;
@@ -53,10 +58,19 @@ public class RawAeronServerPong {
     @Override
     int processOutbound(List<MsgPublication> publications) {
       int result = 0;
-      DirectBuffer buffer = queue.poll();
-      if (buffer != null) {
-        for (MsgPublication publication : publications) {
-          result += publication.proceed(buffer);
+      if (!queue.isEmpty()) {
+        for (int i = 0, current; i < MAX_WRITE_LIMIT; i++) {
+          DirectBuffer buffer = queue.peek();
+          current = 0;
+          if (buffer != null) {
+            for (MsgPublication publication : publications) {
+              current += publication.proceed(buffer);
+            }
+          }
+          if (current < 1) {
+            break;
+          }
+          result += current;
         }
       }
       return result;

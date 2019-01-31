@@ -37,7 +37,7 @@ public class RawAeronClientPing {
       super(aeron);
 
       // start reporter
-      histogram = new Recorder(3);
+      histogram = new Recorder(3600000000000L, 3);
 
       fragmentHandler = new LongFragmentHandler(histogram);
 
