@@ -86,7 +86,7 @@ public final class AeronServer {
    * Attach IO handler to react on connected client.
    *
    * @param handler IO handler that can dispose underlying connection when {@link Publisher}
-   *     terminates.
+   * terminates.
    * @return new {@code AeronServer} with handler
    */
   public AeronServer handle(Function<? super AeronConnection, ? extends Publisher<Void>> handler) {

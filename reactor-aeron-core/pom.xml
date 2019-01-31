@@ -19,6 +19,10 @@
       <groupId>io.aeron</groupId>
       <artifactId>aeron-client</artifactId>
     </dependency>
+    <dependency>
+      <groupId>io.aeron</groupId>
+      <artifactId>aeron-archive</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>io.projectreactor</groupId>
