@@ -39,6 +39,20 @@
       <artifactId>netty-buffer</artifactId>
       <version>${netty.version}</version>
     </dependency>
+
+
+    <dependency>
+      <groupId>io.rsocket</groupId>
+      <artifactId>rsocket-core</artifactId>
+      <version>0.11.15</version>
+    </dependency>
+
+    <dependency>
+      <groupId>io.rsocket</groupId>
+      <artifactId>rsocket-transport-netty</artifactId>
+      <version>0.11.15</version>
+    </dependency>
+
   </dependencies>
 
   <build>
