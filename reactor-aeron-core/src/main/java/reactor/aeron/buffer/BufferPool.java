@@ -17,7 +17,7 @@ public class BufferPool {
     slabs.add(slab);
   }
 
-  BufferSlice allocate(int size) {
+  public BufferSlice allocate(int size) {
     for (BufferSlab slab : slabs) {
       BufferSlice slice = slab.allocate(size);
       if (slice != null) {

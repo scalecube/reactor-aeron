@@ -7,7 +7,7 @@ public class BufferSlab {
   private final UnsafeBuffer underlying;
 
   volatile int readIndex;
-  volatile int writeIndex;
+  int writeIndex;
 
   public BufferSlab(UnsafeBuffer underlying) {
     this.underlying = underlying;
@@ -23,9 +23,8 @@ public class BufferSlab {
 
     int availableBytes = wIndex >= rIndex ? underlying.capacity() - wIndex : rIndex - wIndex;
     if (availableBytes >= size) {
-      int currentOffset = wIndex + size;
       // todo thread safe update
-      this.writeIndex = currentOffset;
+      this.writeIndex = wIndex + size;
       return slice(wIndex, size + BufferSlice.HEADER_OFFSET);
     }
 
