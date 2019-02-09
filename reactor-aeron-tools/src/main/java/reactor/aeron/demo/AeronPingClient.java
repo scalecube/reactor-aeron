@@ -111,7 +111,9 @@ public final class AeronPingClient {
   }
 
   private static Disposable startReport() {
-    return Flux.interval(Duration.ofSeconds(Configurations.REPORT_INTERVAL))
+    return Flux.interval(
+            Duration.ofSeconds(Configurations.WARMUP_REPORT_DELAY),
+            Duration.ofSeconds(Configurations.REPORT_INTERVAL))
         .doOnNext(AeronPingClient::report)
         .doFinally(AeronPingClient::report)
         .subscribe();

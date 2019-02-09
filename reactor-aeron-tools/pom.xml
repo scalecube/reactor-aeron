@@ -2,6 +2,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
+  <properties>
+    <rsocket.version>0.11.15</rsocket.version>
+    <rsocket-transport-aeron.version>0.1.11</rsocket-transport-aeron.version>
+  </properties>
+
   <parent>
     <groupId>io.scalecube</groupId>
     <artifactId>scalecube-reactor-aeron</artifactId>
@@ -39,6 +44,40 @@
       <artifactId>netty-buffer</artifactId>
       <version>${netty.version}</version>
     </dependency>
+
+    <dependency>
+      <groupId>io.rsocket</groupId>
+      <artifactId>rsocket-core</artifactId>
+      <version>${rsocket.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.rsocket</groupId>
+      <artifactId>rsocket-transport-netty</artifactId>
+      <version>${rsocket.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>io.netty</groupId>
+          <artifactId>netty-common</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>io.scalecube</groupId>
+      <artifactId>rsocket-transport-aeron</artifactId>
+      <version>${rsocket-transport-aeron.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>io.rsocket</groupId>
+          <artifactId>rsocket-core</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>io.scalecube</groupId>
+          <artifactId>reactor-aeron-core</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
   </dependencies>
 
   <build>

@@ -212,7 +212,9 @@ public class MdcPingNoWaitingWithSimpleBackpressure {
         // no-op
       };
     }
-    return Flux.interval(Duration.ofSeconds(Configurations.REPORT_INTERVAL))
+    return Flux.interval(
+            Duration.ofSeconds(Configurations.WARMUP_REPORT_DELAY),
+            Duration.ofSeconds(Configurations.REPORT_INTERVAL))
         .doOnNext(MdcPingNoWaitingWithSimpleBackpressure::report)
         .doFinally(MdcPingNoWaitingWithSimpleBackpressure::report)
         .subscribe();

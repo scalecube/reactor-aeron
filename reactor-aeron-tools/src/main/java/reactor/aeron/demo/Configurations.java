@@ -35,6 +35,7 @@ public interface Configurations {
   int REQUESTED = Integer.getInteger("reactor.aeron.sample.request", 8);
   String IDLE_STRATEGY = System.getProperty("reactor.aeron.sample.idle.strategy", "busyspin");
   long REPORT_INTERVAL = Long.getLong("reactor.aeron.sample.report.interval", 1);
+  long WARMUP_REPORT_DELAY = Long.getLong("reactor.aeron.sample.report.delay", REPORT_INTERVAL);
 
   /**
    * Returns idle strategy.
