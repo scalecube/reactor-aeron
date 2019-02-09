@@ -15,8 +15,14 @@ public class BufferSlab {
 
   public BufferSlice allocate(int size /*without headers*/) {
     int wIndex = this.writeIndex;
-    int rLimit = underlying.capacity() - wIndex;
-    if (rLimit >= size) {
+    int rIndex = this.readIndex;
+
+    if (wIndex == rIndex && !isReleased(rIndex)) {
+      return null;
+    }
+
+    int availableBytes = wIndex >= rIndex ? underlying.capacity() - wIndex : rIndex - wIndex;
+    if (availableBytes >= size) {
       int currentOffset = wIndex + size;
       // todo thread safe update
       this.writeIndex = currentOffset;
@@ -26,17 +32,22 @@ public class BufferSlab {
     // right limit is not enough, so try to look for appropriate size from beginning
 
     int currentOffset = 0;
-    int availableBytes = 0;
 
-    while (isReleased(currentOffset)) {
-      availableBytes += msgLength(currentOffset) + BufferSlice.HEADER_OFFSET;
+    int rightLimit = underlying.capacity() - BufferSlice.HEADER_OFFSET;
+    while (currentOffset < rightLimit && isReleased(currentOffset)) {
+      int nextOffset = nextOffset(currentOffset);
+      availableBytes = nextOffset - currentOffset;
       if (availableBytes >= size + BufferSlice.HEADER_OFFSET) {
-        this.writeIndex = availableBytes + BufferSlice.HEADER_OFFSET;
+        this.writeIndex = size + BufferSlice.HEADER_OFFSET;
         return slice(currentOffset, size);
       }
-      currentOffset += availableBytes + BufferSlice.HEADER_OFFSET;
+      currentOffset = nextOffset;
     }
     return null;
+  }
+
+  private int nextOffset(int offset) {
+    return offset + BufferSlice.HEADER_OFFSET + msgLength(offset);
   }
 
   private int msgLength(int offset) {

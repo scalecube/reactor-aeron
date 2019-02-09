@@ -1,27 +1,14 @@
 package reactor.aeron.buffer;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
 import java.nio.ByteBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-
 /**
- * 0/1    - byte, free or not
- * 321    - int, length
- * ...    - bytes, message
+ * 0/1 - byte, free or not 321 - int, length ... - bytes, message
  *
- * 0/1    - byte, free or not
- * 213    - int, length
- * ...    - bytes, message
+ * <p>0/1 - byte, free or not 213 - int, length ... - bytes, message
  *
- * 0/1    - byte, free or not
- * 321    - int, length
- * ...    - bytes, message
- *
- *
- *
- *
+ * <p>0/1 - byte, free or not 321 - int, length ... - bytes, message
  */
 public class BufferSlice {
 
@@ -66,8 +53,6 @@ public class BufferSlice {
   public void getBytes(int index, ByteBuffer dstBuffer, int dstOffset, int length) {
     underlying.getBytes(offset() + index, dstBuffer, dstOffset, length);
   }
-
-
 
   void print() {
     System.out.println("Slice offset = " + offset);
