@@ -1,5 +1,7 @@
 package reactor.aeron.buffer;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.nio.ByteBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -60,11 +62,12 @@ public class BufferSlice {
 //    System.out.println("Slice all = " + underlying.getStringUtf8(offset, length));
 //    System.out.println("Slice msg free = " + underlying.getByte(offset));
 //    System.out.println("Slice msg length = " + underlying.getInt(offset + FREE_FLAG_OFFSET));
-    System.out.println("Slice msg = " + underlying.getStringUtf8(offset + HEADER_OFFSET, length - HEADER_OFFSET));
+//    System.out.println("Slice msg = " + underlying.getStringUtf8(offset + HEADER_OFFSET, length - HEADER_OFFSET));
+//    System.out.println("Slice msg = " + underlying.getStringUtf8(offset + HEADER_OFFSET));
 
-//    byte[] bytes = new byte[length];
-//    underlying.getBytes(offset + HEADER_OFFSET, bytes);
-//
-//    System.out.println("Slice bytes msg = " + new String(bytes, UTF_8));
+
+    byte[] bytes = new byte[length - HEADER_OFFSET];
+    underlying.getBytes(offset + HEADER_OFFSET, bytes);
+    System.out.println("Slice bytes msg = " + new String(bytes, UTF_8));
   }
 }
