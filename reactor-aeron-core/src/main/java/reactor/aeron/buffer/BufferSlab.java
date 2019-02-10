@@ -94,9 +94,10 @@ public class BufferSlab {
 
       wIndex = 0;
       // todo continue;
+      return allocate(fullLength, wIndex, rIndex);
     }
 
-    if (wIndex == 0 && rIndex == 0) {
+    if (wIndex == 0 && rIndex == 0 && isReleased(rIndex)) {
       //  b------------
       int availableBytes = underlying.capacity();
       if (availableBytes >= fullLength) {
@@ -107,7 +108,7 @@ public class BufferSlab {
       return null;
     }
 
-    if (wIndex == rIndex) {
+    if (wIndex == rIndex && isReleased(rIndex)) {
       // not enough => change wIndex = 0, try again and if not enough again => null
       //  ------b------
       //  w-----r------
