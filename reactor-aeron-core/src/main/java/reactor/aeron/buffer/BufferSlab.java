@@ -19,73 +19,49 @@ public class BufferSlab {
 
   public BufferSlice allocate(int size /*without headers*/) {
     final int fullLength = size + BufferSlice.HEADER_OFFSET;
-    int wIndex = writeIndex;
-    int rIndex = readIndex;
+    return allocate(fullLength, writeIndex, readIndex);
+  }
 
-    while (isReleased(wIndex)) {
-      if (rIndex > wIndex) {
-        // not enough => move rIndex until not enough and then if not enough again => null
-        //  ---w-----r--
-        //  ---w------r-
-        //  ---w-------r
-        //  r--w--------
-        int availableBytes = rIndex - wIndex;
-        if (availableBytes >= fullLength) {
-          this.writeIndex = wIndex + fullLength;
-          this.readIndex = rIndex;
-          return slice(wIndex, fullLength);
-        }
+  private BufferSlice allocate(final int fullLength, int wIndex, int rIndex) {
 
-        if (!isReleased(rIndex)) {
-          return null;
-        }
-
-        boolean finish = true;
-        while (isReleased(rIndex)) {
-          int nextOffset = nextOffset(rIndex);
-          if (nextOffset < 0) {
-            rIndex = 0;
-            continue;
-          }
-          if (nextOffset == this.writeIndex) {
-            wIndex = 0;
-            rIndex = 0;
-
-            finish = false; // todo continue
-            break;
-          }
-          rIndex = nextOffset;
-
-          if (rIndex > wIndex) {
-            availableBytes = rIndex - wIndex;
-          }
-          if (wIndex > rIndex) {
-            availableBytes = underlying.capacity() - wIndex;
-          }
-
-          if (availableBytes >= fullLength) {
-            this.writeIndex = wIndex + fullLength;
-            this.readIndex = rIndex;
-            if (this.writeIndex == underlying.capacity()) {
-              this.writeIndex = 0;
-            }
-            return slice(wIndex, fullLength);
-          }
-        }
-
-        if (finish) {
-          this.readIndex = rIndex;
-          return null;
-        }
+    if (rIndex > wIndex) {
+      // not enough => move rIndex until not enough and then if not enough again => null
+      //  ---w-----r--
+      //  ---w------r-
+      //  ---w-------r
+      //  r--w--------
+      int availableBytes = rIndex - wIndex;
+      if (availableBytes >= fullLength) {
+        this.writeIndex = wIndex + fullLength;
+        this.readIndex = rIndex;
+        return slice(wIndex, fullLength);
       }
 
-      if (wIndex > rIndex) {
-        // not enough => change wIndex = 0, try again and if not enough again => null
-        //  ------r---w--
-        //  ------r----w-
-        //  ------r-----w
-        //  w-----r------
-        int availableBytes = underlying.capacity() - wIndex;
+      if (!isReleased(rIndex)) {
+        return null;
+      }
+
+      //        boolean finish = true;
+      while (isReleased(rIndex)) {
+        int nextOffset = nextOffset(rIndex);
+        if (nextOffset < 0) {
+          rIndex = 0;
+          continue;
+        }
+        if (nextOffset == this.writeIndex) {
+          wIndex = 0;
+          rIndex = 0;
+          return allocate(fullLength, wIndex, rIndex);
+        }
+        rIndex = nextOffset;
+
+        if (rIndex > wIndex) {
+          availableBytes = rIndex - wIndex;
+        }
+        if (wIndex > rIndex) {
+          availableBytes = underlying.capacity() - wIndex;
+        }
+
         if (availableBytes >= fullLength) {
           this.writeIndex = wIndex + fullLength;
           this.readIndex = rIndex;
@@ -94,36 +70,56 @@ public class BufferSlab {
           }
           return slice(wIndex, fullLength);
         }
-
-        wIndex = 0;
-        // todo continue;
       }
 
-      if (wIndex == 0 && rIndex == 0) {
-        //  b------------
-        int availableBytes = underlying.capacity();
-        if (availableBytes >= fullLength) {
-          this.writeIndex = wIndex + fullLength;
-          this.readIndex = rIndex;
-          return slice(wIndex, fullLength);
+      this.readIndex = rIndex;
+      return null;
+    }
+
+    if (wIndex > rIndex) {
+      // not enough => change wIndex = 0, try again and if not enough again => null
+      //  ------r---w--
+      //  ------r----w-
+      //  ------r-----w
+      //  w-----r------
+      int availableBytes = underlying.capacity() - wIndex;
+      if (availableBytes >= fullLength) {
+        this.writeIndex = wIndex + fullLength;
+        this.readIndex = rIndex;
+        if (this.writeIndex == underlying.capacity()) {
+          this.writeIndex = 0;
         }
-        return null;
+        return slice(wIndex, fullLength);
       }
 
-      if (wIndex == rIndex) {
-        // not enough => change wIndex = 0, try again and if not enough again => null
-        //  ------b------
-        //  w-----r------
-        //  b------------
-        this.writeIndex = 0;
-        this.readIndex = 0;
-        int availableBytes = underlying.capacity();
-        if (availableBytes >= fullLength) {
-          this.writeIndex = wIndex + fullLength;
-          return slice(wIndex, fullLength);
-        }
-        return null;
+      wIndex = 0;
+      // todo continue;
+    }
+
+    if (wIndex == 0 && rIndex == 0) {
+      //  b------------
+      int availableBytes = underlying.capacity();
+      if (availableBytes >= fullLength) {
+        this.writeIndex = wIndex + fullLength;
+        this.readIndex = rIndex;
+        return slice(wIndex, fullLength);
       }
+      return null;
+    }
+
+    if (wIndex == rIndex) {
+      // not enough => change wIndex = 0, try again and if not enough again => null
+      //  ------b------
+      //  w-----r------
+      //  b------------
+      this.writeIndex = 0;
+      this.readIndex = 0;
+      int availableBytes = underlying.capacity();
+      if (availableBytes >= fullLength) {
+        this.writeIndex = wIndex + fullLength;
+        return slice(wIndex, fullLength);
+      }
+      return null;
     }
 
     this.readIndex = rIndex;
