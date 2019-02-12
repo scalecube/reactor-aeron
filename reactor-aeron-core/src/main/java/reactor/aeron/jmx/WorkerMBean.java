@@ -1,10 +1,17 @@
-package reactor.aeron;
+package reactor.aeron.jmx;
 
 /**
- * JMX MBean exposer class for event loop worker thread (see for details {@link AeronEventLoop}).
- * Contains various runtime stats.
+ * JMX MBean exposer class for event loop worker thread (see for details AeronEventLoop). Contains
+ * various runtime stats.
  */
 public interface WorkerMBean {
+
+  /**
+   * Returns worker name.
+   *
+   * @return worker name
+   */
+  String getName();
 
   /**
    * Returns number of ticks per last second.

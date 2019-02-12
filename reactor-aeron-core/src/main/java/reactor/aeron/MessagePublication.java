@@ -8,12 +8,13 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.aeron.jmx.MessagePublicationMBean;
 import reactor.core.Exceptions;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoProcessor;
 import reactor.core.publisher.MonoSink;
 
-class MessagePublication implements OnDisposable {
+class MessagePublication implements MessagePublicationMBean, OnDisposable {
 
   private static final Logger logger = LoggerFactory.getLogger(MessagePublication.class);
 
@@ -187,15 +188,6 @@ class MessagePublication implements OnDisposable {
   }
 
   /**
-   * Delegates to {@link Publication#sessionId()}.
-   *
-   * @return aeron {@code Publication} sessionId.
-   */
-  int sessionId() {
-    return publication.sessionId();
-  }
-
-  /**
    * Delegates to {@link Publication#isClosed()}.
    *
    * @return {@code true} if aeron {@code Publication} is closed, {@code false} otherwise
@@ -265,6 +257,53 @@ class MessagePublication implements OnDisposable {
   @Override
   public String toString() {
     return "MessagePublication{pub=" + publication.channel() + "}";
+  }
+
+  @Override
+  public String getName() {
+    return Integer.toHexString(publication.sessionId())
+        + "_"
+        + Integer.toHexString(publication.hashCode());
+  }
+
+  @Override
+  public int getSessionId() {
+    return publication.sessionId();
+  }
+
+  @Override
+  public String getPublicationChannel() {
+    return publication.channel();
+  }
+
+  @Override
+  public String getEventLoopName() {
+    return eventLoop.toString();
+  }
+
+  @Override
+  public int getWriteLimit() {
+    return writeLimit;
+  }
+
+  @Override
+  public Duration getConnectTimeout() {
+    return connectTimeout;
+  }
+
+  @Override
+  public Duration getBackpressureTimeout() {
+    return backpressureTimeout;
+  }
+
+  @Override
+  public Duration getAdminActionTimeout() {
+    return adminActionTimeout;
+  }
+
+  @Override
+  public int getPublishTasksCount() {
+    return publishTasks.size();
   }
 
   /**

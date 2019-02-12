@@ -1,8 +1,12 @@
 package reactor.aeron;
 
+import reactor.aeron.jmx.WorkerMBean;
+
 public final class WorkerFlightRecorder implements WorkerMBean {
 
   private static final int REPORT_INTERVAL = 1000;
+
+  private final String name;
 
   private long reportTime;
 
@@ -25,6 +29,10 @@ public final class WorkerFlightRecorder implements WorkerMBean {
   private long lastTotalIdleCount;
   private long lastTotalWorkCount;
 
+  WorkerFlightRecorder(String name) {
+    this.name = name;
+  }
+
   public void start() {
     reportTime = System.currentTimeMillis() + REPORT_INTERVAL;
   }
@@ -40,6 +48,11 @@ public final class WorkerFlightRecorder implements WorkerMBean {
       processReporting(
           totalTickCount, totalOutboundCount, totalInboundCount, totalIdleCount, totalWorkCount);
     }
+  }
+
+  @Override
+  public String getName() {
+    return name;
   }
 
   @Override

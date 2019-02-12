@@ -1,6 +1,5 @@
 package reactor.aeron;
 
-import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -8,12 +7,10 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.function.Consumer;
-import javax.management.MBeanServer;
-import javax.management.ObjectName;
-import javax.management.StandardMBean;
 import org.agrona.concurrent.IdleStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.aeron.jmx.JmxUtils;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoProcessor;
 import reactor.core.publisher.MonoSink;
@@ -66,16 +63,12 @@ final class AeronEventLoop implements OnDisposable {
     };
   }
 
-  private Worker createWorker() throws Exception {
+  private Worker createWorker() {
     final String threadName = String.format("%s-%x-%d", name, groupId, workerId);
     final ThreadFactory threadFactory = defaultThreadFactory(threadName);
 
-    WorkerFlightRecorder flightRecorder = new WorkerFlightRecorder();
-    MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
-    ObjectName objectName = new ObjectName("reactor.aeron:name=" + threadName);
-    StandardMBean standardMBean = new StandardMBean(flightRecorder, WorkerMBean.class);
-    mbeanServer.registerMBean(standardMBean, objectName);
-
+    WorkerFlightRecorder flightRecorder = new WorkerFlightRecorder(threadName);
+    JmxUtils.register(flightRecorder);
     Worker worker = new Worker(flightRecorder);
     thread = threadFactory.newThread(worker);
     thread.start();
@@ -108,6 +101,7 @@ final class AeronEventLoop implements OnDisposable {
                     sink -> {
                       if (!cancelIfDisposed(sink)) {
                         publications.add(p);
+                        JmxUtils.register(p);
                         logger.debug("Registered {}", p);
                         sink.success(p);
                       }
@@ -166,6 +160,7 @@ final class AeronEventLoop implements OnDisposable {
             worker ->
                 command(
                     sink -> {
+                      JmxUtils.unregister(p);
                       publications.remove(p);
                       Mono.fromRunnable(p::close).subscribe(null, sink::error, sink::success);
                     }));
@@ -319,6 +314,7 @@ final class AeronEventLoop implements OnDisposable {
         disposeInbounds();
         disposeSubscriptions();
         disposePublications();
+        JmxUtils.unregister(flightRecorder);
       } finally {
         onDispose.onComplete();
       }
@@ -362,6 +358,7 @@ final class AeronEventLoop implements OnDisposable {
         MessagePublication p = it.next();
         it.remove();
         try {
+          JmxUtils.unregister(p);
           p.close();
         } catch (Exception ex) {
           // no-op
@@ -400,5 +397,10 @@ final class AeronEventLoop implements OnDisposable {
       sink.error(AeronExceptions.failWithCancel("CommandTask has cancelled"));
     }
     return isDisposed;
+  }
+
+  @Override
+  public String toString() {
+    return String.format("%s-%x-%d", name, groupId, workerId);
   }
 }

@@ -49,7 +49,7 @@ final class AeronClientConnector {
               .flatMap(
                   publication -> {
                     // inbound->MDC(xor(sessionId))->Sub(control-endpoint, xor(sessionId))
-                    int sessionId = publication.sessionId();
+                    int sessionId = publication.getSessionId();
                     String inboundChannel =
                         options
                             .inboundUri()
