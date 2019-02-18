@@ -1,8 +1,10 @@
 package reactor.aeron;
 
+import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static reactor.aeron.BaseAeronTest.TIMEOUT;
 
 import java.util.function.Function;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -12,7 +14,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.ReplayProcessor;
 import reactor.test.StepVerifier;
 
-public class AeronArchivingServerTest {
+public class ArchiveTest {
 
   private int serverPort;
   private int serverControlPort;
@@ -22,7 +24,7 @@ public class AeronArchivingServerTest {
   void beforeEach() {
     serverPort = SocketUtils.findAvailableUdpPort();
     serverControlPort = SocketUtils.findAvailableUdpPort();
-    resources = new AeronResources().archiving().useTmpDir().singleWorker().start().block();
+    resources = new AeronResources().useTmpDir().singleWorker().start().block();
   }
 
   @AfterEach
@@ -34,22 +36,53 @@ public class AeronArchivingServerTest {
   }
 
   @Test
-  public void testServerReceivesData() {
-    ReplayProcessor<String> processor = ReplayProcessor.create();
+  void testRecordThenReplay() {
 
-    createServer(
+    final String messagePrefix = "Prefix-";
+    final int messageCount = 10;
+    Flux<String> payload = Flux
+        .fromStream(IntStream.range(0, messageCount).mapToObj(i -> messagePrefix + i));
+    final long stopPosition;
+
+    // create "logging" server
+    ReplayProcessor<String> subscriptionProcessor = ReplayProcessor.create();
+
+    OnDisposable server = AeronServer.create(resources)
+        .options("localhost", serverPort, serverControlPort)
+        .handle(connection -> {
+
+          connection.archive().startRecording()
+
+          connection.inbound().receive().asString().log("receive").subscribe(subscriptionProcessor);
+          return connection.onDispose();
+        })
+        .bind()
+        .block(TIMEOUT);
+
+    AeronConnection connection = createConnection();
+
+
+  }
+
+  @Test
+  public void testServerReceivesData() {
+    ReplayProcessor<String> subscriptionProcessor = ReplayProcessor.create();
+
+    OnDisposable server = createServer(
         connection -> {
-          connection.inbound().receive().asString().log("receive").subscribe(processor);
+          connection.inbound().receive().asString().log("receive").subscribe(subscriptionProcessor);
           return connection.onDispose();
         });
 
-    createConnection()
+    AeronConnection connection = createConnection();
+
+    connection
         .outbound()
         .sendString(Flux.fromStream(Stream.of("Hello", "world!")).log("send"))
         .then()
         .subscribe();
 
-    StepVerifier.create(processor).expectNext("Hello", "world!").thenCancel().verify();
+    StepVerifier.create(subscriptionProcessor).expectNext("Hello", "world!").thenCancel().verify();
   }
 
   private AeronConnection createConnection() {

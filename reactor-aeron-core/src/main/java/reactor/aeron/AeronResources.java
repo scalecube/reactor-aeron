@@ -8,9 +8,9 @@ import io.aeron.Subscription;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.archive.ArchivingMediaDriver;
+import io.aeron.archive.client.AeronArchive;
 import io.aeron.driver.MediaDriver;
 import java.io.File;
-import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.UUID;
@@ -40,9 +40,6 @@ public final class AeronResources implements OnDisposable {
   private int writeLimit = 32;
   private int numOfWorkers = Runtime.getRuntime().availableProcessors();
 
-  // Archive:
-  private static final long MAX_CATALOG_ENTRIES = 1024;
-
   private Aeron.Context aeronContext =
       new Aeron.Context().errorHandler(th -> logger.warn("Aeron exception occurred: " + th, th));
 
@@ -62,8 +59,9 @@ public final class AeronResources implements OnDisposable {
 
 
   // Archive settings
+  // Archive:
+  private static final long MAX_CATALOG_ENTRIES = 1024;
   private static final String ARCHIVE_DIR_NAME = "archive";
-  private boolean enableArchiving;
   private Archive.Context archiveContext = new Archive.Context()
       .maxCatalogEntries(MAX_CATALOG_ENTRIES)
       .deleteArchiveOnStart(true)
@@ -76,7 +74,8 @@ public final class AeronResources implements OnDisposable {
 
   // State
   private Aeron aeron;
-  private AutoCloseable mediaDriver;
+  private AeronArchive aeronArchive;
+  private ArchivingMediaDriver mediaDriver;
   private AeronEventLoopGroup eventLoopGroup;
 
   // Lifecycle
@@ -123,18 +122,6 @@ public final class AeronResources implements OnDisposable {
     this.workerIdleStrategySupplier = that.workerIdleStrategySupplier;
     copy(ac);
     copy(mdc);
-  }
-
-  public AeronResources(AeronResources that, Archive.Context archiveContext) {
-    this();
-    this.enableArchiving = true;
-    this.archiveContext = archiveContext;
-    this.pollFragmentLimit = that.pollFragmentLimit;
-    this.numOfWorkers = that.numOfWorkers;
-    this.workerIdleStrategySupplier = that.workerIdleStrategySupplier;
-    copy(that.aeronContext);
-    copy(that.mediaContext);
-
   }
 
   private AeronResources copy() {
@@ -253,28 +240,6 @@ public final class AeronResources implements OnDisposable {
   }
 
   /**
-   * Enable Archiving facilities with archive configuration provided
-   *
-   * @param o modifier operator
-   * @return new {@code AeronResources} object
-   */
-  public AeronResources archiving(UnaryOperator<Archive.Context> o) {
-    AeronResources c = copy();
-    Archive.Context archiveContext = o.apply(c.archiveContext);
-    return new AeronResources(c, archiveContext);
-  }
-
-  /**
-   * Enable Archiving facilities with default archive configuration
-   *
-   * @return new {@code AeronResources} object
-   */
-  public AeronResources archiving() {
-    return archiving(arc -> this.archiveContext);
-  }
-
-
-  /**
    * Set to use temp directory instead of default aeron directory.
    *
    * @return new {@code AeronResources} object
@@ -365,21 +330,25 @@ public final class AeronResources implements OnDisposable {
   private Mono<Void> doStart() {
     return Mono.fromRunnable(
         () -> {
-          mediaDriver = enableArchiving
-              ? ArchivingMediaDriver.launch(mediaContext,
-              archiveContext.aeronDirectoryName(mediaContext.aeronDirectoryName()))
-              : MediaDriver.launchEmbedded(mediaContext);
+          mediaDriver = ArchivingMediaDriver.launch(
+              mediaContext,
+              archiveContext.aeronDirectoryName(mediaContext.aeronDirectoryName()));
 
           aeronContext.aeronDirectoryName(mediaContext.aeronDirectoryName());
 
           aeron = Aeron.connect(aeronContext);
+
+          aeronArchive = AeronArchive.connect(new AeronArchive.Context().aeron(aeron));
 
           eventLoopGroup =
               new AeronEventLoopGroup("reactor-aeron", numOfWorkers, workerIdleStrategySupplier);
 
           Runtime.getRuntime()
               .addShutdownHook(
-                  new Thread(() -> deleteAeronDirectory(mediaContext.aeronDirectoryName())));
+                  new Thread(() -> {
+                    mediaDriver.archive().context().deleteArchiveDirectory();
+                    mediaDriver.mediaDriver().context().deleteAeronDirectory();
+                  }));
 
           logger.debug(
               "{} has initialized embedded media driver, aeron directory: {}",
@@ -395,6 +364,10 @@ public final class AeronResources implements OnDisposable {
    */
   AeronEventLoop nextEventLoop() {
     return eventLoopGroup.next();
+  }
+
+  AeronArchive aeronArchive() {
+    return aeronArchive;
   }
 
   /**
@@ -596,22 +569,13 @@ public final class AeronResources implements OnDisposable {
               .then(eventLoopGroup.onDispose())
               .doFinally(
                   s -> {
+                    CloseHelper.close(aeronArchive);
                     CloseHelper.quietClose(aeron);
-
                     CloseHelper.quietClose(mediaDriver);
-
-                    Optional.ofNullable(aeronContext)
-                        .ifPresent(c -> IoUtil.delete(c.aeronDirectory(), true));
+                    mediaDriver.archive().context().deleteArchiveDirectory();
+                    mediaDriver.mediaDriver().context().deleteAeronDirectory();
                   });
         });
-  }
-
-  private void deleteAeronDirectory(String aeronDirectoryName) {
-    File aeronDirectory = Paths.get(aeronDirectoryName).toFile();
-    if (aeronDirectory.exists()) {
-      IoUtil.delete(aeronDirectory, true);
-      logger.debug("{} deleted aeron directory {}", this, aeronDirectoryName);
-    }
   }
 
   @Override

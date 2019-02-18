@@ -1,5 +1,6 @@
 package reactor.aeron;
 
+import io.aeron.archive.client.AeronArchive;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
@@ -30,6 +31,10 @@ public interface AeronConnection extends OnDisposable {
    * @return {@code AeronOutbound} instance
    */
   AeronOutbound outbound();
+
+  AeronArchive archive();
+
+
 
   /**
    * Assign a {@link Disposable} to be invoked when the channel is closed.

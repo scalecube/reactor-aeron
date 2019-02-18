@@ -131,7 +131,7 @@ final class AeronClientConnector {
               DefaultAeronOutbound outbound = new DefaultAeronOutbound(publication);
 
               DuplexAeronConnection connection =
-                  new DuplexAeronConnection(sessionId, inbound, outbound, disposeHook);
+                  new DuplexAeronConnection(sessionId, inbound, outbound, disposeHook, resources.aeronArchive());
 
               return connection.start(handler).doOnError(ex -> connection.dispose());
             });

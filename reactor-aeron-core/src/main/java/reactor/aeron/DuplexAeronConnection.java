@@ -1,5 +1,6 @@
 package reactor.aeron;
 
+import io.aeron.archive.client.AeronArchive;
 import java.util.function.Function;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
@@ -19,6 +20,7 @@ final class DuplexAeronConnection implements AeronConnection {
 
   private final DefaultAeronInbound inbound;
   private final DefaultAeronOutbound outbound;
+  private final AeronArchive archive;
 
   private final MonoProcessor<Void> dispose = MonoProcessor.create();
   private final MonoProcessor<Void> onDispose = MonoProcessor.create();
@@ -35,11 +37,12 @@ final class DuplexAeronConnection implements AeronConnection {
       int sessionId,
       DefaultAeronInbound inbound,
       DefaultAeronOutbound outbound,
-      MonoProcessor<Void> disposeHook) {
+      MonoProcessor<Void> disposeHook, AeronArchive archive) {
 
     this.sessionId = sessionId;
     this.inbound = inbound;
     this.outbound = outbound;
+    this.archive = archive;
 
     dispose
         .or(disposeHook)
@@ -79,6 +82,11 @@ final class DuplexAeronConnection implements AeronConnection {
   @Override
   public AeronOutbound outbound() {
     return outbound;
+  }
+
+  @Override
+  public AeronArchive archive() {
+    return archive;
   }
 
   @Override

@@ -134,7 +134,7 @@ final class AeronServerHandler implements OnDisposable {
     DefaultAeronOutbound outbound = new DefaultAeronOutbound(publication);
 
     DuplexAeronConnection connection =
-        new DuplexAeronConnection(sessionId, inbound, outbound, disposeHook);
+        new DuplexAeronConnection(sessionId, inbound, outbound, disposeHook, );
 
     return connection
         .start(handler)
