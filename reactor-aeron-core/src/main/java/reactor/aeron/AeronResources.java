@@ -384,7 +384,7 @@ public final class AeronResources implements OnDisposable {
    *
    * @param image aeron image
    * @param subscription subscription
-   * @param eventLoop aeron event lopop
+   * @param eventLoop aeron event loop
    * @return mono result
    */
   Mono<DefaultAeronInbound> inbound(

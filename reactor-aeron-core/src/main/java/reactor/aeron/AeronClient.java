@@ -5,11 +5,11 @@ import java.util.function.UnaryOperator;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 
-public final class AeronClient {
+public class AeronClient {
 
-  private final AeronOptions options;
+  protected final AeronOptions options;
 
-  private AeronClient(AeronOptions options) {
+  protected AeronClient(AeronOptions options) {
     this.options = options;
   }
 

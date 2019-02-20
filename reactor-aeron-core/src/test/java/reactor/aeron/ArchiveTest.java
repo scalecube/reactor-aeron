@@ -3,6 +3,7 @@ package reactor.aeron;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static reactor.aeron.BaseAeronTest.TIMEOUT;
 
+import io.aeron.ChannelUriStringBuilder;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -19,6 +20,20 @@ public class ArchiveTest {
   private int serverPort;
   private int serverControlPort;
   private AeronResources resources;
+
+  private static final int TERM_BUFFER_LENGTH = 64 * 1024;
+  private static final int RECORDING_STREAM_ID = 33;
+  private static final String RECORDING_CHANNEL = new ChannelUriStringBuilder()
+      .media("udp")
+      .endpoint("localhost:3333")
+      .termLength(TERM_BUFFER_LENGTH)
+      .build();
+
+  private static final int REPLAY_STREAM_ID = 66;
+  private static final String REPLAY_CHANNEL = new ChannelUriStringBuilder()
+      .media("udp")
+      .endpoint("localhost:6666")
+      .build();
 
   @BeforeEach
   void beforeEach() {
