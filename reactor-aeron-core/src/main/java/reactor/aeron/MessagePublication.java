@@ -59,7 +59,7 @@ class MessagePublication implements OnDisposable {
   <B> Mono<Void> publish(Publisher<B> publisher, DirectBufferHandler<? super B> bufferHandler) {
     return Mono.defer(
         () -> {
-          PublisherProcessor processor = new PublisherProcessor(bufferHandler, this);
+          PublisherProcessor<B> processor = new PublisherProcessor<>(bufferHandler, this);
           publisher.subscribe(processor);
           pendingProcessors.offer(processor);
           return processor.onDispose();
@@ -277,9 +277,9 @@ class MessagePublication implements OnDisposable {
     return "MessagePublication{pub=" + publication.channel() + "}";
   }
 
-  private static class PublisherProcessor extends BaseSubscriber implements OnDisposable {
+  private static class PublisherProcessor<B> extends BaseSubscriber<B> implements OnDisposable {
 
-    private final DirectBufferHandler bufferHandler;
+    private final DirectBufferHandler<? super B> bufferHandler;
     private final MessagePublication parent;
 
     private long start;
@@ -287,10 +287,11 @@ class MessagePublication implements OnDisposable {
 
     private final MonoProcessor<Void> onDispose = MonoProcessor.create();
 
-    private volatile Object buffer;
+    private volatile B buffer;
     private volatile Throwable error;
 
-    PublisherProcessor(DirectBufferHandler bufferHandler, MessagePublication messagePublication) {
+    PublisherProcessor(
+        DirectBufferHandler<? super B> bufferHandler, MessagePublication messagePublication) {
       this.bufferHandler = bufferHandler;
       this.parent = messagePublication;
     }
@@ -339,7 +340,7 @@ class MessagePublication implements OnDisposable {
     }
 
     @Override
-    protected void hookOnNext(Object value) {
+    protected void hookOnNext(B value) {
       if (buffer != null) {
         bufferHandler.dispose(value);
         throw Exceptions.failWithOverflow(
@@ -360,7 +361,7 @@ class MessagePublication implements OnDisposable {
       }
     }
 
-    long publish(Object buffer) {
+    long publish(B buffer) {
       if (start == 0) {
         start = System.currentTimeMillis();
       }
@@ -373,7 +374,7 @@ class MessagePublication implements OnDisposable {
     }
 
     private void resetBuffer() {
-      Object oldBuffer = buffer;
+      B oldBuffer = buffer;
       buffer = null;
       if (oldBuffer != null) {
         bufferHandler.dispose(oldBuffer);
