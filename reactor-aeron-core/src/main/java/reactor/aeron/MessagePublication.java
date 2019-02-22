@@ -4,7 +4,7 @@ import io.aeron.Publication;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.Queue;
-import java.util.function.Function;
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
@@ -14,7 +14,6 @@ import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoProcessor;
 import reactor.core.publisher.SignalType;
-import reactor.util.concurrent.Queues;
 
 class MessagePublication implements OnDisposable {
 
@@ -30,10 +29,10 @@ class MessagePublication implements OnDisposable {
 
   private final MonoProcessor<Void> onDispose = MonoProcessor.create();
 
-  private final Queue<Function<Integer, PublisherProcessor>> newProcessors =
-      Queues.<Function<Integer, PublisherProcessor>>unbounded().get();
+  private final Queue<PublisherProcessor> pendingProcessors =
+      new ManyToOneConcurrentArrayQueue<>(4);
 
-  private final PublisherProcessor[] publisherProcessors = new PublisherProcessor[256];
+  private final PublisherProcessor[] wipProcessors = new PublisherProcessor[256];
 
   /**
    * Constructor.
@@ -60,15 +59,10 @@ class MessagePublication implements OnDisposable {
   <B> Mono<Void> publish(Publisher<B> publisher, DirectBufferHandler<? super B> bufferHandler) {
     return Mono.defer(
         () -> {
-          MonoProcessor<Void> promise = MonoProcessor.create();
-          newProcessors.offer(
-              (i) -> {
-                PublisherProcessor processor =
-                    new PublisherProcessor(bufferHandler, this, promise, i);
-                publisher.subscribe(processor);
-                return processor;
-              });
-          return promise;
+          PublisherProcessor processor = new PublisherProcessor(bufferHandler, this);
+          publisher.subscribe(processor);
+          pendingProcessors.offer(processor);
+          return processor.onDispose();
         });
   }
 
@@ -80,22 +74,19 @@ class MessagePublication implements OnDisposable {
    *     was done
    */
   int publish() {
-
-    PublisherProcessor[] oldArray = this.publisherProcessors;
     int result = 0;
-
     Exception ex = null;
 
     //noinspection ForLoopReplaceableByForEach
-    for (int i = 0; i < oldArray.length; i++) {
-      PublisherProcessor processor = oldArray[i];
+    for (int i = 0, n = wipProcessors.length; i < n; i++) {
+      PublisherProcessor processor = wipProcessors[i];
 
       if (processor == null) {
-        Function<Integer, PublisherProcessor> supplier = newProcessors.poll();
-        if (supplier == null) {
+        processor = pendingProcessors.poll();
+        if (processor == null) {
           continue;
         }
-        processor = supplier.apply(i);
+        wipProcessors[i] = processor;
       }
 
       processor.request();
@@ -116,6 +107,9 @@ class MessagePublication implements OnDisposable {
       if (r > 0) {
         result++;
         processor.reset();
+        if (processor.isDisposed()) {
+          wipProcessors[i] = null;
+        }
         continue;
       }
 
@@ -263,9 +257,8 @@ class MessagePublication implements OnDisposable {
   }
 
   private void disposeProcessors() {
-    PublisherProcessor[] oldArray = this.publisherProcessors;
-    for (int i = 0; i < oldArray.length; i++) {
-      PublisherProcessor processor = oldArray[i];
+    for (int i = 0, n = wipProcessors.length; i < n; i++) {
+      PublisherProcessor processor = wipProcessors[i];
       try {
         processor.cancel();
         processor.onParentError(
@@ -274,7 +267,7 @@ class MessagePublication implements OnDisposable {
       } catch (Exception ex) {
         // no-op
       } finally {
-        oldArray[i] = null;
+        wipProcessors[i] = null;
       }
     }
   }
@@ -288,26 +281,18 @@ class MessagePublication implements OnDisposable {
 
     private final DirectBufferHandler bufferHandler;
     private final MessagePublication parent;
-    private final int selfIndex;
 
     private long start;
     private boolean requested;
 
-    private final MonoProcessor<Void> onDispose;
+    private final MonoProcessor<Void> onDispose = MonoProcessor.create();
 
     private volatile Object buffer;
     private volatile Throwable error;
 
-    PublisherProcessor(
-        DirectBufferHandler bufferHandler,
-        MessagePublication messagePublication,
-        MonoProcessor<Void> onDispose,
-        int index) {
+    PublisherProcessor(DirectBufferHandler bufferHandler, MessagePublication messagePublication) {
       this.bufferHandler = bufferHandler;
       this.parent = messagePublication;
-      this.selfIndex = index;
-      this.onDispose = onDispose;
-      parent.publisherProcessors[selfIndex] = this;
     }
 
     @Override
@@ -336,7 +321,6 @@ class MessagePublication implements OnDisposable {
       resetBuffer();
 
       if (isDisposed()) {
-        parent.publisherProcessors[selfIndex] = null;
         if (error != null) {
           onDispose.onError(error);
         } else {
