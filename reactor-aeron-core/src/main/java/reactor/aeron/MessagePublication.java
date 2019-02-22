@@ -34,6 +34,8 @@ class MessagePublication implements OnDisposable {
 
   private final PublisherProcessor[] wipProcessors = new PublisherProcessor[256];
 
+  private int size;
+
   /**
    * Constructor.
    *
@@ -77,16 +79,47 @@ class MessagePublication implements OnDisposable {
     int result = 0;
     Exception ex = null;
 
-    //noinspection ForLoopReplaceableByForEach
-    for (int i = 0, n = wipProcessors.length; i < n; i++) {
-      PublisherProcessor processor = wipProcessors[i];
+    int size = this.size;
+    boolean availableToAddNew = true;
+    int lastAvailableIndex = -1;
+    int index;
+
+    if (size == 0) {
+      PublisherProcessor processor = pendingProcessors.poll();
+      if (processor == null) {
+        return 0;
+      }
+      this.size = ++size;
+      wipProcessors[0] = processor;
+    }
+
+    for (int i = 0; i < size; i++) {
+      index = i;
+      PublisherProcessor processor = wipProcessors[index];
 
       if (processor == null) {
-        processor = pendingProcessors.poll();
-        if (processor == null) {
+        this.size--;
+        if (availableToAddNew) {
+          processor = pendingProcessors.poll();
+          if (processor == null) {
+            availableToAddNew = false;
+            lastAvailableIndex = index;
+            continue;
+          }
+          this.size++;
+          wipProcessors[index] = processor;
+        } else {
+          lastAvailableIndex = index;
           continue;
         }
-        wipProcessors[i] = processor;
+      }
+
+      // shift to left
+      if (lastAvailableIndex > -1) {
+        wipProcessors[lastAvailableIndex] = wipProcessors[index];
+        wipProcessors[index] = null;
+        index = lastAvailableIndex;
+        lastAvailableIndex++;
       }
 
       processor.request();
@@ -108,7 +141,7 @@ class MessagePublication implements OnDisposable {
         result++;
         processor.reset();
         if (processor.isDisposed()) {
-          wipProcessors[i] = null;
+          wipProcessors[index] = null;
         }
         continue;
       }
@@ -270,6 +303,7 @@ class MessagePublication implements OnDisposable {
         wipProcessors[i] = null;
       }
     }
+    size = 0;
   }
 
   @Override
