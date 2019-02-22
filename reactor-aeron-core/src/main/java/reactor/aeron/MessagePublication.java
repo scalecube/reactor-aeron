@@ -4,7 +4,7 @@ import io.aeron.Publication;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.Queue;
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
+import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
@@ -30,7 +30,7 @@ class MessagePublication implements OnDisposable {
   private final MonoProcessor<Void> onDispose = MonoProcessor.create();
 
   private final Queue<PublisherProcessor> pendingProcessors =
-      new ManyToOneConcurrentArrayQueue<>(4);
+      new ManyToOneConcurrentLinkedQueue<>();
 
   private final PublisherProcessor[] wipProcessors = new PublisherProcessor[256];
 
