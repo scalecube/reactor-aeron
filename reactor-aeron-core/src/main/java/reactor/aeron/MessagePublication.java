@@ -14,6 +14,7 @@ import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoProcessor;
 import reactor.core.publisher.SignalType;
+import reactor.util.concurrent.Queues;
 
 class MessagePublication implements OnDisposable {
 
@@ -32,7 +33,8 @@ class MessagePublication implements OnDisposable {
   private final Queue<PublisherProcessor> pendingProcessors =
       new ManyToOneConcurrentLinkedQueue<>();
 
-  private final PublisherProcessor[] wipProcessors = new PublisherProcessor[256];
+  private final PublisherProcessor[] wipProcessors =
+      new PublisherProcessor[Queues.SMALL_BUFFER_SIZE];
 
   private int size;
 
@@ -79,21 +81,21 @@ class MessagePublication implements OnDisposable {
     int result = 0;
     Exception ex = null;
 
-    int size = this.size;
     boolean availableToAddNew = true;
     int lastAvailableIndex = -1;
     int index;
 
-    if (size == 0) {
+    for (int i = size, n = wipProcessors.length; i < n; i++) {
       PublisherProcessor processor = pendingProcessors.poll();
       if (processor == null) {
-        return 0;
+        availableToAddNew = false;
+        break;
       }
-      this.size = ++size;
-      wipProcessors[0] = processor;
+      wipProcessors[i] = processor;
+      this.size = i + 1;
     }
 
-    for (int i = 0; i < size; i++) {
+    for (int i = 0, n = this.size; i < n; i++) {
       index = i;
       PublisherProcessor processor = wipProcessors[index];
 
@@ -109,7 +111,9 @@ class MessagePublication implements OnDisposable {
           this.size++;
           wipProcessors[index] = processor;
         } else {
-          lastAvailableIndex = index;
+          if (lastAvailableIndex < 0) {
+            lastAvailableIndex = index;
+          }
           continue;
         }
       }
