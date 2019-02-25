@@ -14,13 +14,11 @@
 
   <dependencies>
     <dependency>
-      <groupId>io.aeron</groupId>
-      <artifactId>aeron-driver</artifactId>
+      <groupId>io.scalecube</groupId>
+      <artifactId>reactor-aeron-core</artifactId>
+      <version>${project.version}</version>
     </dependency>
-    <dependency>
-      <groupId>io.aeron</groupId>
-      <artifactId>aeron-client</artifactId>
-    </dependency>
+
     <dependency>
       <groupId>io.aeron</groupId>
       <artifactId>aeron-archive</artifactId>
