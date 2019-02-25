@@ -1,6 +1,8 @@
 package reactor.aeron;
 
 import io.aeron.Aeron;
+import io.aeron.archive.Archive;
+import io.aeron.archive.ArchivingMediaDriver;
 import io.aeron.driver.MediaDriver;
 import java.io.File;
 import java.nio.file.Paths;
@@ -43,11 +45,15 @@ public final class AeronArchiveResources implements OnDisposable {
           .publicationReservedSessionIdLow(0)
           .publicationReservedSessionIdHigh(Integer.MAX_VALUE);
 
+  private Archive.Context archiveContext =
+      new Archive.Context()
+          .errorHandler(th -> logger.warn("Exception occurred on Archive: " + th, th));
+
   private Supplier<IdleStrategy> workerIdleStrategySupplier = defaultBackoffIdleStrategySupplier;
 
   // State
   private Aeron aeron;
-  private MediaDriver mediaDriver;
+  private ArchivingMediaDriver archivingMediaDriver;
   private AeronEventLoopGroup eventLoopGroup;
 
   // Lifecycle
@@ -282,9 +288,9 @@ public final class AeronArchiveResources implements OnDisposable {
   private Mono<Void> doStart() {
     return Mono.fromRunnable(
         () -> {
-          mediaDriver = MediaDriver.launchEmbedded(mediaContext);
+          archivingMediaDriver = ArchivingMediaDriver.launch(mediaContext, archiveContext);
 
-          aeronContext.aeronDirectoryName(mediaDriver.aeronDirectoryName());
+          aeronContext.aeronDirectoryName(archivingMediaDriver.mediaDriver().aeronDirectoryName());
 
           aeron = Aeron.connect(aeronContext);
 
@@ -294,7 +300,10 @@ public final class AeronArchiveResources implements OnDisposable {
 
           Runtime.getRuntime()
               .addShutdownHook(
-                  new Thread(() -> deleteAeronDirectory(mediaDriver.aeronDirectoryName())));
+                  new Thread(
+                      () ->
+                          deleteAeronDirectory(
+                              archivingMediaDriver.mediaDriver().aeronDirectoryName())));
 
           logger.debug(
               "{} has initialized embedded media driver, aeron directory: {}",
@@ -348,7 +357,7 @@ public final class AeronArchiveResources implements OnDisposable {
                   s -> {
                     CloseHelper.quietClose(aeron);
 
-                    CloseHelper.quietClose(mediaDriver);
+                    CloseHelper.quietClose(archivingMediaDriver);
 
                     Optional.ofNullable(aeronContext)
                         .ifPresent(c -> IoUtil.delete(c.aeronDirectory(), true));
