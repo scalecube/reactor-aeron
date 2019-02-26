@@ -1,6 +1,10 @@
 package reactor.aeron.archive;
 
+import static reactor.aeron.archive.MessageBroker.MY_CHANNEL;
+import static reactor.aeron.archive.MessageBroker.MY_STREAM_ID;
+
 import io.aeron.Aeron;
+import io.aeron.ExclusivePublication;
 import io.aeron.Publication;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.codecs.SourceLocation;
@@ -8,6 +12,7 @@ import io.aeron.archive.status.RecordingPos;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.MediaDriver.Context;
 import io.aeron.driver.ThreadingMode;
+import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -16,6 +21,7 @@ import org.agrona.IoUtil;
 import org.agrona.concurrent.SigInt;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
+import reactor.core.publisher.Flux;
 
 public class Client {
 
@@ -44,6 +50,27 @@ public class Client {
       aeron =
           Aeron.connect(new Aeron.Context().aeronDirectoryName(mediaDriver.aeronDirectoryName()));
 
+      ExclusivePublication exclusivePublication = aeron
+          .addExclusivePublication(MY_CHANNEL, MY_STREAM_ID);
+
+
+
+      Flux.interval(Duration.ofMillis(100)).subscribe(i -> {
+
+        final String message = "Hello World! " + i;
+        final byte[] messageBytes = message.getBytes();
+        BUFFER.putBytes(0, messageBytes);
+
+        long workCount = exclusivePublication.offer(BUFFER);
+
+
+      });
+
+
+
+      Thread.currentThread().join();
+
+
       //        .controlResponseChannel("aeron:udp?endpoint=localhost:54327")
       //        .controlResponseStreamId(1001)
       aeronArchive =
@@ -54,16 +81,19 @@ public class Client {
                   //        .controlResponseStreamId(1001)
                   .ownsAeronClient(true));
 
+
+
+
       long subscriptionId =
           aeronArchive.startRecording(
-              MessageBroker.MY_CHANNEL, MessageBroker.MY_STREAM_ID, SourceLocation.REMOTE);
+              MY_CHANNEL, MY_STREAM_ID, SourceLocation.REMOTE);
 
       final AtomicBoolean running = new AtomicBoolean(true);
       SigInt.register(() -> running.set(false));
 
       try (Publication publication =
           aeron
-              .addExclusivePublication(MessageBroker.MY_CHANNEL, MessageBroker.MY_STREAM_ID)) {
+              .addExclusivePublication(MY_CHANNEL, MY_STREAM_ID)) {
 
 
 
