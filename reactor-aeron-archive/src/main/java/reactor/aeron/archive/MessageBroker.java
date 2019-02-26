@@ -36,7 +36,6 @@ public class MessageBroker {
                     .aeronDirectoryName(aeronDirName)
                     .dirDeleteOnStart(true),
                 new Archive.Context()
-
 //                    .controlChannel(MY_CHANNEL)
 //                    .controlStreamId(MY_STREAM_ID)
 
@@ -53,20 +52,20 @@ public class MessageBroker {
 
 
 
-      Aeron aeron =
-          Aeron.connect(new Aeron.Context().aeronDirectoryName(mediaDriver.aeronDirectoryName()));
-
-      Subscription subscription = aeron.addSubscription(MY_CHANNEL, MY_STREAM_ID);
-
-      IdleStrategy idleStrategy = new SleepingMillisIdleStrategy(1000);
-
-      while (true) {
-        int poll = subscription.poll((buffer, offset, length, header) -> {
-          System.out.println(length);
-        }, 1);
-
-        idleStrategy.idle(poll);
-      }
+//      Aeron aeron =
+//          Aeron.connect(new Aeron.Context().aeronDirectoryName(mediaDriver.aeronDirectoryName()));
+//
+//      Subscription subscription = aeron.addSubscription(MY_CHANNEL, MY_STREAM_ID);
+//
+//      IdleStrategy idleStrategy = new SleepingMillisIdleStrategy(1000);
+//
+//      while (true) {
+//        int poll = subscription.poll((buffer, offset, length, header) -> {
+//          System.out.println(length);
+//        }, 1);
+//
+//        idleStrategy.idle(poll);
+//      }
 
 //      AeronArchive aeronArchive =
 //          AeronArchive.connect(
@@ -90,7 +89,7 @@ public class MessageBroker {
 //          "aeronArchive.context().aeronDirectoryName() = "
 //              + aeronArchive.context().aeronDirectoryName());
 
-//      Thread.currentThread().join();
+      Thread.currentThread().join();
     } finally {
       if (archivingMediaDriver != null) {
         archivingMediaDriver.archive().context().deleteArchiveDirectory();

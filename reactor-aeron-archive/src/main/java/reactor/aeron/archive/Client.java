@@ -55,20 +55,20 @@ public class Client {
 
 
 
-      Flux.interval(Duration.ofMillis(100)).subscribe(i -> {
+//      Flux.interval(Duration.ofMillis(100)).subscribe(i -> {
+//
+//        final String message = "Hello World! " + i;
+//        final byte[] messageBytes = message.getBytes();
+//        BUFFER.putBytes(0, messageBytes);
+//
+//        long workCount = exclusivePublication.offer(BUFFER);
+//
+//
+//      });
 
-        final String message = "Hello World! " + i;
-        final byte[] messageBytes = message.getBytes();
-        BUFFER.putBytes(0, messageBytes);
-
-        long workCount = exclusivePublication.offer(BUFFER);
 
 
-      });
-
-
-
-      Thread.currentThread().join();
+//      Thread.currentThread().join();
 
 
       //        .controlResponseChannel("aeron:udp?endpoint=localhost:54327")
@@ -77,8 +77,10 @@ public class Client {
           AeronArchive.connect(
               new AeronArchive.Context()
                   .aeron(aeron)
-                  //        .controlResponseChannel("aeron:udp?endpoint=localhost:54327")
-                  //        .controlResponseStreamId(1001)
+//                          .controlRequestChannel("aeron:udp?endpoint=localhost:54327")
+//                          .controlResponseChannel("aeron:udp?endpoint=localhost:54327")
+//                          .controlResponseStreamId(1001)
+//                          .controlRequestStreamId(1001)
                   .ownsAeronClient(true));
 
 
@@ -86,38 +88,38 @@ public class Client {
 
       long subscriptionId =
           aeronArchive.startRecording(
-              MY_CHANNEL, MY_STREAM_ID, SourceLocation.REMOTE);
+              "aeron:udp?endpoint=localhost:54327", 2222, SourceLocation.REMOTE);
 
       final AtomicBoolean running = new AtomicBoolean(true);
       SigInt.register(() -> running.set(false));
 
       try (Publication publication =
           aeron
-              .addExclusivePublication(MY_CHANNEL, MY_STREAM_ID)) {
+              .addExclusivePublication("aeron:udp?endpoint=localhost:54327", 2222)) {
 
 
 
+//
+//        // Wait for recording to have started before publishing.
+//        final CountersReader counters = aeronArchive.context().aeron().countersReader();
+//        int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
+//        while (CountersReader.NULL_COUNTER_ID == counterId) {
+//
+//
+//          if (!running.get())
+//          {
+//            return;
+//          }
+//
+//          Thread.yield();
+//          counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
+//          System.out.println(counterId);
+//        }
 
-        // Wait for recording to have started before publishing.
-        final CountersReader counters = aeronArchive.context().aeron().countersReader();
-        int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
-        while (CountersReader.NULL_COUNTER_ID == counterId) {
+//        final long recordingId = RecordingPos.getRecordingId(counters, counterId);
+//        System.out.println("Recording started: recordingId = " + recordingId);
 
-
-          if (!running.get())
-          {
-            return;
-          }
-
-          Thread.yield();
-          counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
-
-        }
-
-        final long recordingId = RecordingPos.getRecordingId(counters, counterId);
-        System.out.println("Recording started: recordingId = " + recordingId);
-
-        int n = 10;
+        int n = 100000;
         for (int i = 0; i < n && running.get(); i++) {
           final String message = "Hello World! " + i;
           final byte[] messageBytes = message.getBytes();
@@ -136,13 +138,13 @@ public class Client {
           Thread.sleep(TimeUnit.SECONDS.toMillis(1));
         }
 
-        while (counters.getCounterValue(counterId) < publication.position()) {
-          if (!RecordingPos.isActive(counters, counterId, recordingId)) {
-            throw new IllegalStateException("recording has stopped unexpectedly: " + recordingId);
-          }
-
-          Thread.yield();
-        }
+//        while (counters.getCounterValue(counterId) < publication.position()) {
+//          if (!RecordingPos.isActive(counters, counterId, recordingId)) {
+//            throw new IllegalStateException("recording has stopped unexpectedly: " + recordingId);
+//          }
+//
+//          Thread.yield();
+//        }
       }
 
     } finally {
