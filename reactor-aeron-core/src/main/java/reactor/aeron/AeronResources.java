@@ -341,7 +341,7 @@ public final class AeronResources implements OnDisposable {
           DefaultAeronInbound inbound =
               new DefaultAeronInbound(image, eventLoop, subscription, pollFragmentLimit);
           return eventLoop
-              .registerInbound(inbound)
+              .register(inbound)
               .doOnError(
                   ex ->
                       logger.error(
@@ -375,8 +375,7 @@ public final class AeronResources implements OnDisposable {
                 .flatMap(
                     aeronPublication ->
                         eventLoop
-                            .registerPublication(
-                                new MessagePublication(aeronPublication, options, eventLoop))
+                            .register(new MessagePublication(aeronPublication, options, eventLoop))
                             .doOnError(
                                 ex -> {
                                   logger.error(
@@ -442,8 +441,7 @@ public final class AeronResources implements OnDisposable {
                 .flatMap(
                     aeronSubscription ->
                         eventLoop
-                            .registerSubscription(
-                                new MessageSubscription(aeronSubscription, eventLoop))
+                            .register(new MessageSubscription(aeronSubscription, eventLoop))
                             .doOnError(
                                 ex -> {
                                   logger.error(

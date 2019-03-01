@@ -3,7 +3,6 @@ package reactor.aeron;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
@@ -78,12 +77,6 @@ final class DefaultAeronOutbound implements AeronOutbound {
     @Override
     public int estimateLength(DirectBuffer buffer) {
       return buffer.capacity();
-    }
-
-    @Override
-    public void write(
-        MutableDirectBuffer dstBuffer, int index, DirectBuffer srcBuffer, int length) {
-      dstBuffer.putBytes(index, srcBuffer, 0, length);
     }
 
     @Override

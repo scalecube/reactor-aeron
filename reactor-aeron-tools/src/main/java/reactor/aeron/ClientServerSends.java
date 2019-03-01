@@ -15,29 +15,25 @@ public class ClientServerSends {
    *
    * @param args program arguments.
    */
-  public static void main(String[] args) throws Exception {
+  public static void main(String[] args) {
     AeronResources resources = new AeronResources().useTmpDir().start().block();
-    try {
-      AeronClient.create(resources)
-          .options("localhost", 13000, 13001)
-          .handle(
-              connection ->
-                  connection
-                      .inbound()
-                      .receive()
-                      .as(ByteBufFlux::create)
-                      .asString()
-                      .log("receive")
-                      .then(connection.onDispose()))
-          .connect()
-          .block();
 
-      System.out.println("main completed");
-      Thread.currentThread().join();
-    } finally {
-      resources.dispose();
-      resources.onDispose().block();
-    }
+    AeronClient.create(resources)
+        .options("localhost", 13000, 13001)
+        .handle(
+            connection ->
+                connection
+                    .inbound()
+                    .receive()
+                    .as(ByteBufFlux::create)
+                    .asString()
+                    .log("receive")
+                    .then(connection.onDispose()))
+        .connect()
+        .block()
+        .onDispose(resources)
+        .onDispose()
+        .block();
   }
 
   static class ByteBufFlux extends FluxOperator<ByteBuf, ByteBuf> {

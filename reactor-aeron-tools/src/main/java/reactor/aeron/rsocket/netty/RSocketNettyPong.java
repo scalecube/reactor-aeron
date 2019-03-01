@@ -1,5 +1,6 @@
 package reactor.aeron.rsocket.netty;
 
+import io.netty.channel.ChannelOption;
 import io.rsocket.AbstractRSocket;
 import io.rsocket.Frame;
 import io.rsocket.Payload;
@@ -18,24 +19,41 @@ public final class RSocketNettyPong {
    * @param args program arguments.
    */
   public static void main(String... args) {
+    System.out.println(
+        "message size: "
+            + Configurations.MESSAGE_LENGTH
+            + ", number of messages: "
+            + Configurations.NUMBER_OF_MESSAGES
+            + ", address: "
+            + Configurations.MDC_ADDRESS
+            + ", port: "
+            + Configurations.MDC_PORT);
+
+    LoopResources loopResources = LoopResources.create("rsocket-netty");
 
     TcpServer tcpServer =
         TcpServer.create()
-            .runOn(LoopResources.create("server", 1, true))
+            .runOn(loopResources)
             .host(Configurations.MDC_ADDRESS)
-            .port(Configurations.MDC_PORT);
+            .port(Configurations.MDC_PORT)
+            .option(ChannelOption.TCP_NODELAY, true)
+            .option(ChannelOption.SO_KEEPALIVE, true)
+            .option(ChannelOption.SO_REUSEADDR, true)
+            .doOnConnection(System.out::println);
 
     RSocketFactory.receive()
         .frameDecoder(Frame::retain)
         .acceptor(
-            (setupPayload, rsocket) ->
-                Mono.just(
-                    new AbstractRSocket() {
-                      @Override
-                      public Mono<Payload> requestResponse(Payload payload) {
-                        return Mono.just(payload);
-                      }
-                    }))
+            (setupPayload, rsocket) -> {
+              System.out.println(rsocket);
+              return Mono.just(
+                  new AbstractRSocket() {
+                    @Override
+                    public Mono<Payload> requestResponse(Payload payload) {
+                      return Mono.just(payload);
+                    }
+                  });
+            })
         .transport(() -> TcpServerTransport.create(tcpServer))
         .start()
         .block()

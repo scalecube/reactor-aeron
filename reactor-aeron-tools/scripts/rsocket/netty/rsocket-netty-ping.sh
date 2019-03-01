@@ -9,6 +9,5 @@ java \
     -cp target/${JAR_FILE}:target/lib/* \
     -XX:+UnlockDiagnosticVMOptions \
     -XX:GuaranteedSafepointInterval=300000 \
-    -Dreactor.aeron.sample.messageLength=16 \
-    -Dreactor.aeron.sample.request=128 \
+    -Dreactor.aeron.sample.messageLength=1024 \
     ${JVM_OPTS} reactor.aeron.rsocket.netty.RSocketNettyPing

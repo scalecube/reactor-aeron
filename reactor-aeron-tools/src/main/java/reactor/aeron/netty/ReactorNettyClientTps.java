@@ -3,10 +3,10 @@ package reactor.aeron.netty;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
-import java.net.InetSocketAddress;
 import java.util.Random;
 import reactor.aeron.Configurations;
 import reactor.core.publisher.Flux;
@@ -34,16 +34,25 @@ public class ReactorNettyClientTps {
    */
   public static void main(String[] args) {
     System.out.println(
-        "address: " + Configurations.MDC_ADDRESS + ", port: " + Configurations.MDC_PORT);
+        "message size: "
+            + Configurations.MESSAGE_LENGTH
+            + ", number of messages: "
+            + Configurations.NUMBER_OF_MESSAGES
+            + ", address: "
+            + Configurations.MDC_ADDRESS
+            + ", port: "
+            + Configurations.MDC_PORT);
 
-    LoopResources loopResources = LoopResources.create("reactor-netty-ping");
+    LoopResources loopResources = LoopResources.create("reactor-netty");
 
     TcpClient.create(ConnectionProvider.newConnection())
-        .addressSupplier(
-            () ->
-                InetSocketAddress.createUnresolved(
-                    Configurations.MDC_ADDRESS, Configurations.MDC_PORT))
         .runOn(loopResources)
+        .host(Configurations.MDC_ADDRESS)
+        .port(Configurations.MDC_PORT)
+        .option(ChannelOption.TCP_NODELAY, true)
+        .option(ChannelOption.SO_KEEPALIVE, true)
+        .option(ChannelOption.SO_REUSEADDR, true)
+        .doOnConnected(System.out::println)
         .bootstrap(
             b ->
                 BootstrapHandlers.updateConfiguration(
@@ -52,15 +61,13 @@ public class ReactorNettyClientTps {
                     (connectionObserver, channel) -> {
                       setupChannel(channel);
                     }))
-        .doOnConnected(c -> System.out.println("connected"))
         .handle(
-            (inbound, outbound) ->
-                outbound
-                    .send(
-                        Flux.range(0, Byte.MAX_VALUE)
-                            .repeat(Integer.MAX_VALUE)
-                            .map(i -> PAYLOAD.retainedSlice()))
-                    .then())
+            (inbound, outbound) -> {
+              int msgNum = (int) Configurations.NUMBER_OF_MESSAGES;
+              System.out.println("streaming " + msgNum + " messages ...");
+
+              return outbound.send(Flux.range(0, msgNum).map(i -> PAYLOAD.retainedSlice())).then();
+            })
         .connectNow()
         .onDispose()
         .doFinally(s -> loopResources.dispose())

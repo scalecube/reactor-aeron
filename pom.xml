@@ -57,7 +57,6 @@
         <version>${aeron.version}</version>
       </dependency>
 
-      <!-- Reactor Core -->
       <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-bom</artifactId>
@@ -66,7 +65,7 @@
         <scope>import</scope>
       </dependency>
 
-      <!-- Loggers -->
+      <!-- Logging -->
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>

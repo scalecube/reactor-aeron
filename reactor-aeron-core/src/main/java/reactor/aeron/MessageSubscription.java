@@ -7,7 +7,7 @@ import reactor.core.Exceptions;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoProcessor;
 
-class MessageSubscription implements OnDisposable {
+class MessageSubscription implements OnDisposable, AeronResource {
 
   private static final Logger logger = LoggerFactory.getLogger(MessageSubscription.class);
 
@@ -27,7 +27,8 @@ class MessageSubscription implements OnDisposable {
     this.eventLoop = eventLoop;
   }
 
-  void close() {
+  @Override
+  public void close() {
     if (!eventLoop.inEventLoop()) {
       throw AeronExceptions.failWithResourceDisposal("aeron subscription");
     }
@@ -45,7 +46,7 @@ class MessageSubscription implements OnDisposable {
   @Override
   public void dispose() {
     eventLoop
-        .disposeSubscription(this)
+        .dispose(this)
         .subscribe(
             null,
             th -> {

@@ -7,26 +7,23 @@ public class ServerDemo {
    *
    * @param args program arguments.
    */
-  public static void main(String[] args) throws Exception {
+  public static void main(String[] args) {
     AeronResources resources = new AeronResources().useTmpDir().start().block();
-    try {
-      AeronServer.create(resources)
-          .options("localhost", 13000, 13001)
-          .handle(
-              connection ->
-                  connection
-                      .inbound()
-                      .receive()
-                      .asString()
-                      .log("receive")
-                      .then(connection.onDispose()))
-          .bind()
-          .block();
 
-      Thread.currentThread().join();
-    } finally {
-      resources.dispose();
-      resources.onDispose().block();
-    }
+    AeronServer.create(resources)
+        .options("localhost", 13000, 13001)
+        .handle(
+            connection ->
+                connection
+                    .inbound()
+                    .receive()
+                    .asString()
+                    .log("receive")
+                    .then(connection.onDispose()))
+        .bind()
+        .block()
+        .onDispose(resources)
+        .onDispose()
+        .block();
   }
 }

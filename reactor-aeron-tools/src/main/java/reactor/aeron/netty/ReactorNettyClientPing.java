@@ -4,11 +4,11 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 import io.netty.handler.codec.MessageToByteEncoder;
-import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
@@ -46,17 +46,26 @@ public class ReactorNettyClientPing {
    */
   public static void main(String[] args) {
     System.out.println(
-        "address: " + Configurations.MDC_ADDRESS + ", port: " + Configurations.MDC_PORT);
+        "message size: "
+            + Configurations.MESSAGE_LENGTH
+            + ", number of messages: "
+            + Configurations.NUMBER_OF_MESSAGES
+            + ", address: "
+            + Configurations.MDC_ADDRESS
+            + ", port: "
+            + Configurations.MDC_PORT);
 
-    LoopResources loopResources = LoopResources.create("reactor-netty-ping");
+    LoopResources loopResources = LoopResources.create("reactor-netty");
 
     Connection connection =
         TcpClient.create(ConnectionProvider.newConnection())
-            .addressSupplier(
-                () ->
-                    InetSocketAddress.createUnresolved(
-                        Configurations.MDC_ADDRESS, Configurations.MDC_PORT))
             .runOn(loopResources)
+            .host(Configurations.MDC_ADDRESS)
+            .port(Configurations.MDC_PORT)
+            .option(ChannelOption.TCP_NODELAY, true)
+            .option(ChannelOption.SO_KEEPALIVE, true)
+            .option(ChannelOption.SO_REUSEADDR, true)
+            .doOnConnected(System.out::println)
             .bootstrap(
                 b ->
                     BootstrapHandlers.updateConfiguration(
@@ -65,7 +74,6 @@ public class ReactorNettyClientPing {
                         (connectionObserver, channel) -> {
                           setupChannel(channel);
                         }))
-            .doOnConnected(c -> System.out.println("connected"))
             .connectNow();
 
     ContinueBarrier barrier = new ContinueBarrier("Execute again?");

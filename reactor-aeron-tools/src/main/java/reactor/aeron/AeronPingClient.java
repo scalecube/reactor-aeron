@@ -7,7 +7,6 @@ import org.HdrHistogram.Recorder;
 import org.agrona.BitUtil;
 import org.agrona.BufferUtil;
 import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.console.ContinueBarrier;
 import reactor.core.Disposable;
@@ -130,11 +129,6 @@ public final class AeronPingClient {
     @Override
     public int estimateLength(Object ignore) {
       return Configurations.MESSAGE_LENGTH;
-    }
-
-    @Override
-    public void write(MutableDirectBuffer dstBuffer, int index, Object ignore, int length) {
-      dstBuffer.putLong(index, System.nanoTime());
     }
 
     @Override

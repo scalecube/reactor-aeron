@@ -2,12 +2,12 @@ package reactor.aeron;
 
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import javax.management.StandardMBean;
@@ -29,9 +29,7 @@ final class AeronEventLoop implements OnDisposable {
   private final int groupId; // event loop group id
 
   private final Queue<CommandTask> commands = new ConcurrentLinkedQueue<>();
-  private final List<MessagePublication> publications = new ArrayList<>();
-  private final List<MessageSubscription> subscriptions = new ArrayList<>();
-  private final List<DefaultAeronInbound> inbounds = new ArrayList<>();
+  private final List<AeronResource> resources = new ArrayList<>();
 
   private final MonoProcessor<Void> dispose = MonoProcessor.create();
   private final MonoProcessor<Void> onDispose = MonoProcessor.create();
@@ -39,6 +37,9 @@ final class AeronEventLoop implements OnDisposable {
   private final Mono<Worker> workerMono;
 
   private volatile Thread thread;
+
+  private List<MessagePublication> publications = new ArrayList<>();
+  private List<DefaultAeronInbound> inbounds = new ArrayList<>();
 
   /**
    * Constructor.
@@ -95,113 +96,43 @@ final class AeronEventLoop implements OnDisposable {
   }
 
   /**
-   * Registers {@link MessagePublication} in event loop.
+   * Registers aeron resource in event loop.
    *
-   * @param p message publication
-   * @return mono result of registration
+   * @param resource aeron resource
+   * @return mono result
    */
-  Mono<MessagePublication> registerPublication(MessagePublication p) {
+  <R extends AeronResource> Mono<R> register(R resource) {
     return worker()
         .flatMap(
             worker ->
                 command(
                     sink -> {
                       if (!cancelIfDisposed(sink)) {
-                        publications.add(p);
-                        logger.debug("Registered {}", p);
-                        sink.success(p);
+                        resources.add(resource);
+                        resetOutboundAndInbound();
+                        logger.debug("Registered {}", resource);
+                        sink.success(resource);
                       }
                     }));
   }
 
   /**
-   * Registers {@link MessageSubscription} in event loop.
+   * Disposes resource and remove it from event loop.
    *
-   * @param s message subscription
-   * @return mono result of registration
-   */
-  Mono<MessageSubscription> registerSubscription(MessageSubscription s) {
-    return worker()
-        .flatMap(
-            worker ->
-                command(
-                    sink -> {
-                      if (!cancelIfDisposed(sink)) {
-                        subscriptions.add(s);
-                        logger.debug("Registered {}", s);
-                        sink.success(s);
-                      }
-                    }));
-  }
-
-  /**
-   * Registers {@link DefaultAeronInbound} in event loop.
-   *
-   * @param inbound aeron inbound
-   * @return mono result of registration
-   */
-  Mono<DefaultAeronInbound> registerInbound(DefaultAeronInbound inbound) {
-    return worker()
-        .flatMap(
-            worker ->
-                command(
-                    sink -> {
-                      if (!cancelIfDisposed(sink)) {
-                        inbounds.add(inbound);
-                        logger.debug("Registered {}", inbound);
-                        sink.success(inbound);
-                      }
-                    }));
-  }
-
-  /**
-   * Disposes {@link MessagePublication} and remove it from event loop.
-   *
-   * @param p message publication
+   * @param resource aeron resource
    * @return mono result
    */
-  Mono<Void> disposePublication(MessagePublication p) {
+  Mono<Void> dispose(AeronResource resource) {
     return worker()
         .flatMap(
             worker ->
                 command(
                     sink -> {
-                      publications.remove(p);
-                      Mono.fromRunnable(p::close).subscribe(null, sink::error, sink::success);
-                    }));
-  }
-
-  /**
-   * Disposes {@link MessageSubscription} and remove it from event loop.
-   *
-   * @param s message subscription
-   * @return mono result
-   */
-  Mono<Void> disposeSubscription(MessageSubscription s) {
-    return worker()
-        .flatMap(
-            worker ->
-                command(
-                    sink -> {
-                      subscriptions.remove(s);
-                      Mono.fromRunnable(s::close).subscribe(null, sink::error, sink::success);
-                    }));
-  }
-
-  /**
-   * Disposes {@link DefaultAeronInbound} and remove it from event loop.
-   *
-   * @param inbound aeron inbound
-   * @return mono result
-   */
-  Mono<Void> disposeInbound(DefaultAeronInbound inbound) {
-    return worker()
-        .flatMap(
-            worker ->
-                command(
-                    sink -> {
-                      inbounds.remove(inbound);
-                      Mono.fromRunnable(inbound::close).subscribe(null, sink::error, sink::success);
+                      resources.remove(resource);
+                      resetOutboundAndInbound();
+                      logger.debug("Closing {}", resource);
+                      Mono.fromRunnable(resource::close)
+                          .subscribe(null, sink::error, sink::success);
                     }));
   }
 
@@ -235,7 +166,6 @@ final class AeronEventLoop implements OnDisposable {
   }
 
   private <T> Mono<T> listenUnavailable() {
-    //noinspection unchecked
     return dispose //
         .map(avoid -> (T) avoid)
         .switchIfEmpty(Mono.error(AeronExceptions::failWithEventLoopUnavailable));
@@ -243,7 +173,7 @@ final class AeronEventLoop implements OnDisposable {
 
   /**
    * Runnable task for submitting to {@link #commands} queue. For usage details see methods: {@link
-   * #registerPublication(MessagePublication)} and {@link #disposePublication(MessagePublication)}.
+   * #register(AeronResource)} and {@link #dispose(AeronResource)}.
    */
   private static class CommandTask<T> implements Runnable {
     private final MonoSink<T> sink;
@@ -287,16 +217,17 @@ final class AeronEventLoop implements OnDisposable {
     public void run() {
       flightRecorder.start();
 
-      // Process commands, publications and subscriptions
       while (!dispose.isDisposed()) {
         flightRecorder.countTick();
 
         // Commands
         processCommands();
 
+        // Outbound
         int o = processOutbound();
         flightRecorder.countOutbound(o);
 
+        // Inbound
         int i = processInbound();
         flightRecorder.countInbound(i);
 
@@ -313,12 +244,10 @@ final class AeronEventLoop implements OnDisposable {
         idleStrategy.idle(workCount);
       }
 
-      // Dispose publications, subscriptions, inbounds and commands
+      // Dispose everything
       try {
         processCommands();
-        disposeInbounds();
-        disposeSubscriptions();
-        disposePublications();
+        disposeResources();
       } finally {
         onDispose.onComplete();
       }
@@ -356,49 +285,38 @@ final class AeronEventLoop implements OnDisposable {
         task.run();
       }
     }
-
-    private void disposePublications() {
-      for (Iterator<MessagePublication> it = publications.iterator(); it.hasNext(); ) {
-        MessagePublication p = it.next();
-        it.remove();
-        try {
-          p.close();
-        } catch (Exception ex) {
-          // no-op
-        }
-      }
-    }
-
-    private void disposeSubscriptions() {
-      for (Iterator<MessageSubscription> it = subscriptions.iterator(); it.hasNext(); ) {
-        MessageSubscription s = it.next();
-        it.remove();
-        try {
-          s.close();
-        } catch (Exception ex) {
-          // no-op
-        }
-      }
-    }
   }
 
-  private void disposeInbounds() {
-    for (Iterator<DefaultAeronInbound> it = inbounds.iterator(); it.hasNext(); ) {
-      DefaultAeronInbound inbound = it.next();
-      it.remove();
+  private void disposeResources() {
+    for (AeronResource resource : resources) {
       try {
-        inbound.close();
+        resource.close();
       } catch (Exception ex) {
-        // no-op
+        logger.warn("Exception occurred at closing AeronResource: {}, cause: {}", resource, ex);
       }
     }
+    resources.clear();
+    publications.clear();
+    inbounds.clear();
   }
 
   private boolean cancelIfDisposed(MonoSink<?> sink) {
     boolean isDisposed = dispose.isDisposed();
     if (isDisposed) {
-      sink.error(AeronExceptions.failWithCancel("CommandTask has cancelled"));
+      sink.error(AeronExceptions.failWithCancel("CommandTask has been cancelled"));
     }
     return isDisposed;
+  }
+
+  private void resetOutboundAndInbound() {
+    publications = filterResources(MessagePublication.class);
+    inbounds = filterResources(DefaultAeronInbound.class);
+  }
+
+  private <T> List<T> filterResources(Class<T> clazz) {
+    return resources.stream()
+        .filter(clazz::isInstance)
+        .map(r -> ((T) r))
+        .collect(Collectors.toList());
   }
 }
