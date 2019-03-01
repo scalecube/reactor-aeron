@@ -43,7 +43,7 @@ final class AeronServerHandler implements OnDisposable {
   private final MonoProcessor<Void> onDispose = MonoProcessor.create();
 
   AeronServerHandler(AeronOptions options) {
-    this.options = options;
+    this.options = options.inboundStreamId(STREAM_ID).outboundStreamId(STREAM_ID);
     this.resources = options.resources();
     this.handler = options.handler();
 
@@ -67,7 +67,7 @@ final class AeronServerHandler implements OnDisposable {
           return resources
               .subscription(
                   acceptorChannel,
-                  STREAM_ID,
+                  options.inboundStreamId(),
                   resources.firstEventLoop(),
                   this::onImageAvailable,
                   this::onImageUnavailable)
@@ -93,16 +93,20 @@ final class AeronServerHandler implements OnDisposable {
   private void onImageAvailable(Image image) {
     // Pub(control-endpoint{address:serverControlPort}, xor(sessionId))->MDC(xor(sessionId))
     int sessionId = image.sessionId();
-    String outboundChannel =
-        options.outboundUri().uri(b -> b.sessionId(sessionId ^ Integer.MAX_VALUE)).asString();
+
+    AeronChannelUriString outboundUri =
+        options.outboundUri().uri(b -> b.sessionId(sessionId ^ Integer.MAX_VALUE));
+    AeronOptions options = this.options.outboundUri(outboundUri);
 
     logger.debug(
-        "{}: creating server connection: {}", Integer.toHexString(sessionId), outboundChannel);
+        "{}: creating server connection: {}",
+        Integer.toHexString(sessionId),
+        outboundUri.asString());
 
     AeronEventLoop eventLoop = resources.nextEventLoop();
 
     resources
-        .publication(outboundChannel, STREAM_ID, options, eventLoop)
+        .publication(options, eventLoop)
         .flatMap(
             publication ->
                 resources
@@ -114,7 +118,7 @@ final class AeronServerHandler implements OnDisposable {
                 logger.debug(
                     "{}: created server connection: {}",
                     Integer.toHexString(sessionId),
-                    outboundChannel))
+                    outboundUri.asString()))
         .subscribe(
             null,
             ex ->

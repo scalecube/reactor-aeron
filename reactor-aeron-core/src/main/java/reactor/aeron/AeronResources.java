@@ -327,6 +327,35 @@ public final class AeronResources implements OnDisposable {
   }
 
   /**
+   * Creates and registers {@link AeronInbound}.
+   *
+   * @param options aeron options
+   * @return mono result
+   */
+  public Mono<AeronInbound> inbound(AeronOptions options) {
+    return Mono.defer(
+        () -> {
+          Integer streamId = options.inboundStreamId();
+
+          if (streamId == null) {
+            throw new IllegalStateException("outboundStreamId wasn't specified");
+          }
+
+          String channel = options.inboundUri().asString();
+
+          MonoProcessor<Image> inboundAvailable = MonoProcessor.create();
+          AeronEventLoop eventLoop = eventLoopGroup.next();
+          return subscription(channel, streamId, eventLoop, inboundAvailable::onNext, null)
+              .flatMap(
+                  subscription ->
+                      inboundAvailable.flatMap(
+                          image ->
+                              inbound(image, subscription, eventLoop)
+                                  .doOnError(ex -> subscription.dispose())));
+        });
+  }
+
+  /**
    * Creates and registers {@link DefaultAeronInbound}.
    *
    * @param image aeron image
@@ -350,16 +379,56 @@ public final class AeronResources implements OnDisposable {
   }
 
   /**
+   * Creates and registers {@link AeronOutbound}.
+   *
+   * @param options aeron options
+   * @return mono result
+   */
+  public Mono<AeronOutbound> outbound(AeronOptions options) {
+    AeronEventLoop eventLoop = eventLoopGroup.next();
+    return publication(options, eventLoop).map(DefaultAeronOutbound::new);
+  }
+
+  /**
+   * Creates aeron {@link ExclusivePublication} then wraps it into {@link MessagePublication}.
+   * Result message publication will be assigned to event loop.
+   *
+   * @param options aeron options
+   * @param eventLoop aeron event loop
+   * @return mono result
+   */
+  Mono<MessagePublication> publication(AeronOptions options, AeronEventLoop eventLoop) {
+    return Mono.defer(
+        () -> {
+          Integer streamId = options.outboundStreamId();
+
+          if (streamId == null) {
+            return Mono.error(new IllegalStateException("outboundStreamId wasn't specified"));
+          }
+
+          int retryCount = options.connectRetryCount();
+          Duration retryInterval = options.connectTimeout();
+
+          return Mono.fromCallable(() -> getOutboundChannel(options))
+              .flatMap(channel -> publication0(channel, streamId, options, eventLoop))
+              .flatMap(mp -> mp.ensureConnected().doOnError(ex -> mp.dispose()))
+              .retryBackoff(retryCount, Duration.ZERO, retryInterval)
+              .doOnError(
+                  ex -> logger.warn("aeron.Publication is not connected after several retries"));
+        });
+  }
+
+  /**
    * Creates aeron {@link ExclusivePublication} then wraps it into {@link MessagePublication}.
    * Result message publication will be assigned to event loop.
    *
    * @param channel aeron channel
    * @param streamId aeron stream id
-   * @param options aeorn options
+   * @param options aeron options
    * @param eventLoop aeron event loop
    * @return mono result
    */
-  Mono<MessagePublication> publication(
+  private Mono<MessagePublication> publication0(
       String channel, int streamId, AeronOptions options, AeronEventLoop eventLoop) {
     return Mono.defer(
         () ->
@@ -402,6 +471,15 @@ public final class AeronResources implements OnDisposable {
 
           return publication;
         });
+  }
+
+  private String getOutboundChannel(AeronOptions options) {
+    AeronChannelUriString outboundUri = options.outboundUri();
+    Supplier<Integer> sessionIdGenerator = options.sessionIdGenerator();
+
+    return sessionIdGenerator != null && outboundUri.builder().sessionId() == null
+        ? outboundUri.uri(opts -> opts.sessionId(sessionIdGenerator.get())).asString()
+        : outboundUri.asString();
   }
 
   @Override

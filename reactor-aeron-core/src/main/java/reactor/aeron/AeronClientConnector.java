@@ -1,9 +1,7 @@
 package reactor.aeron;
 
 import io.aeron.Image;
-import java.time.Duration;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +28,7 @@ final class AeronClientConnector {
   private final Function<? super AeronConnection, ? extends Publisher<Void>> handler;
 
   AeronClientConnector(AeronOptions options) {
-    this.options = options;
+    this.options = options.inboundStreamId(STREAM_ID).outboundStreamId(STREAM_ID);
     this.resources = options.resources();
     this.handler = options.handler();
   }
@@ -45,7 +43,8 @@ final class AeronClientConnector {
         () -> {
           AeronEventLoop eventLoop = resources.nextEventLoop();
 
-          return tryConnect(eventLoop)
+          return resources
+              .publication(options, eventLoop)
               .flatMap(
                   publication -> {
                     // inbound->MDC(xor(sessionId))->Sub(control-endpoint, xor(sessionId))
@@ -68,7 +67,7 @@ final class AeronClientConnector {
                     return resources
                         .subscription(
                             inboundChannel,
-                            STREAM_ID,
+                            options.inboundStreamId(),
                             eventLoop,
                             image -> {
                               logger.debug(
@@ -77,7 +76,7 @@ final class AeronClientConnector {
                             },
                             image -> {
                               logger.debug(
-                                  "{}: client inbound became unavaliable",
+                                  "{}: client inbound became unavailable",
                                   Integer.toHexString(sessionId));
                               disposeHook.onComplete();
                             })
@@ -135,30 +134,5 @@ final class AeronClientConnector {
 
               return connection.start(handler).doOnError(ex -> connection.dispose());
             });
-  }
-
-  private Mono<MessagePublication> tryConnect(AeronEventLoop eventLoop) {
-    return Mono.defer(
-        () -> {
-          int retryCount = options.connectRetryCount();
-          Duration retryInterval = options.connectTimeout();
-
-          // outbound->Pub(endpoint, sessionId)
-          return Mono.fromCallable(this::getOutboundChannel)
-              .flatMap(channel -> resources.publication(channel, STREAM_ID, options, eventLoop))
-              .flatMap(mp -> mp.ensureConnected().doOnError(ex -> mp.dispose()))
-              .retryBackoff(retryCount, Duration.ZERO, retryInterval)
-              .doOnError(
-                  ex -> logger.warn("aeron.Publication is not connected after several retries"));
-        });
-  }
-
-  private String getOutboundChannel() {
-    AeronChannelUriString outboundUri = options.outboundUri();
-    Supplier<Integer> sessionIdGenerator = options.sessionIdGenerator();
-
-    return sessionIdGenerator != null && outboundUri.builder().sessionId() == null
-        ? outboundUri.uri(opts -> opts.sessionId(sessionIdGenerator.get())).asString()
-        : outboundUri.asString();
   }
 }

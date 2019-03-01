@@ -16,7 +16,9 @@ public final class AeronOptions {
   private AeronResources resources;
   private Function<? super AeronConnection, ? extends Publisher<Void>> handler;
   private AeronChannelUriString inboundUri = new AeronChannelUriString();
+  private Integer inboundStreamId;
   private AeronChannelUriString outboundUri = new AeronChannelUriString();
+  private Integer outboundStreamId;
   private Duration connectTimeout = Duration.ofSeconds(5);
   private int connectRetryCount = 3;
   private Duration backpressureTimeout = Duration.ofSeconds(5);
@@ -29,7 +31,9 @@ public final class AeronOptions {
     this.resources = other.resources;
     this.handler = other.handler;
     this.inboundUri = other.inboundUri;
+    this.inboundStreamId = other.inboundStreamId;
     this.outboundUri = other.outboundUri;
+    this.outboundStreamId = other.outboundStreamId;
     this.connectTimeout = other.connectTimeout;
     this.backpressureTimeout = other.backpressureTimeout;
     this.adminActionTimeout = other.adminActionTimeout;
@@ -62,12 +66,28 @@ public final class AeronOptions {
     return set(s -> s.inboundUri = inboundUri);
   }
 
+  public Integer inboundStreamId() {
+    return inboundStreamId;
+  }
+
+  public AeronOptions inboundStreamId(Integer inboundStreamId) {
+    return set(s -> s.inboundStreamId = inboundStreamId);
+  }
+
   public AeronChannelUriString outboundUri() {
     return outboundUri;
   }
 
   public AeronOptions outboundUri(AeronChannelUriString outboundUri) {
     return set(s -> s.outboundUri = outboundUri);
+  }
+
+  public Integer outboundStreamId() {
+    return outboundStreamId;
+  }
+
+  public AeronOptions outboundStreamId(Integer outboundStreamId) {
+    return set(s -> s.outboundStreamId = outboundStreamId);
   }
 
   public Duration connectTimeout() {
