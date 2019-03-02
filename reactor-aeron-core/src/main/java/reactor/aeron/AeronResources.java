@@ -335,17 +335,9 @@ public final class AeronResources implements OnDisposable {
   public Mono<AeronInbound> inbound(AeronOptions options) {
     return Mono.defer(
         () -> {
-          Integer streamId = options.inboundStreamId();
-
-          if (streamId == null) {
-            throw new IllegalStateException("outboundStreamId wasn't specified");
-          }
-
-          String channel = options.inboundUri().asString();
-
           MonoProcessor<Image> inboundAvailable = MonoProcessor.create();
           AeronEventLoop eventLoop = eventLoopGroup.next();
-          return subscription(channel, streamId, eventLoop, inboundAvailable::onNext, null)
+          return subscription(options.onImageAvailable(inboundAvailable::onNext), eventLoop)
               .flatMap(
                   subscription ->
                       inboundAvailable.flatMap(
@@ -385,8 +377,8 @@ public final class AeronResources implements OnDisposable {
    * @return mono result
    */
   public Mono<AeronOutbound> outbound(AeronOptions options) {
-    AeronEventLoop eventLoop = eventLoopGroup.next();
-    return publication(options, eventLoop).map(DefaultAeronOutbound::new);
+    return Mono.defer(
+        () -> publication(options, eventLoopGroup.next()).map(DefaultAeronOutbound::new));
   }
 
   /**
@@ -491,45 +483,46 @@ public final class AeronResources implements OnDisposable {
    * Creates aeron {@link Subscription} then wraps it into {@link MessageSubscription}. Result
    * message subscription will be assigned to event loop.
    *
-   * @param channel aeron channel
-   * @param streamId aeron stream id
+   * @param options aeron options
    * @param eventLoop aeron event loop
-   * @param onImageAvailable available image handler; optional
-   * @param onImageUnavailable unavailable image handler; optional
    * @return mono result
    */
-  Mono<MessageSubscription> subscription(
-      String channel,
-      int streamId,
-      AeronEventLoop eventLoop,
-      Consumer<Image> onImageAvailable,
-      Consumer<Image> onImageUnavailable) {
-
+  Mono<MessageSubscription> subscription(AeronOptions options, AeronEventLoop eventLoop) {
     return Mono.defer(
-        () ->
-            aeronSubscription(channel, streamId, onImageAvailable, onImageUnavailable)
-                .subscribeOn(Schedulers.parallel())
-                .doOnError(
-                    ex ->
-                        logger.error(
-                            "{} failed on aeronSubscription(), channel: {}, cause: {}",
-                            this,
-                            channel,
-                            ex.toString()))
-                .flatMap(
-                    aeronSubscription ->
-                        eventLoop
-                            .register(new MessageSubscription(aeronSubscription, eventLoop))
-                            .doOnError(
-                                ex -> {
-                                  logger.error(
-                                      "{} failed on registerSubscription(), cause: {}",
-                                      this,
-                                      ex.toString());
-                                  if (!aeronSubscription.isClosed()) {
-                                    aeronSubscription.close();
-                                  }
-                                })));
+        () -> {
+          Integer streamId = options.inboundStreamId();
+
+          if (streamId == null) {
+            return Mono.error(new IllegalStateException("inboundStreamId wasn't specified"));
+          }
+
+          String channel = options.inboundUri().asString();
+
+          return aeronSubscription(
+                  channel, streamId, options.onImageAvailable(), options.onImageUnavailable())
+              .subscribeOn(Schedulers.parallel())
+              .doOnError(
+                  ex ->
+                      logger.error(
+                          "{} failed on aeronSubscription(), channel: {}, cause: {}",
+                          this,
+                          channel,
+                          ex.toString()))
+              .flatMap(
+                  aeronSubscription ->
+                      eventLoop
+                          .register(new MessageSubscription(aeronSubscription, eventLoop))
+                          .doOnError(
+                              ex -> {
+                                logger.error(
+                                    "{} failed on registerSubscription(), cause: {}",
+                                    this,
+                                    ex.toString());
+                                if (!aeronSubscription.isClosed()) {
+                                  aeronSubscription.close();
+                                }
+                              }));
+        });
   }
 
   private Mono<Subscription> aeronSubscription(

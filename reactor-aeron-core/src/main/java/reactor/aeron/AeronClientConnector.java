@@ -49,37 +49,40 @@ final class AeronClientConnector {
                   publication -> {
                     // inbound->MDC(xor(sessionId))->Sub(control-endpoint, xor(sessionId))
                     int sessionId = publication.sessionId();
-                    String inboundChannel =
-                        options
-                            .inboundUri()
-                            .uri(b -> b.sessionId(sessionId ^ Integer.MAX_VALUE))
-                            .asString();
+
+                    // setup cleanup hook to use it onwards
+                    MonoProcessor<Void> disposeHook = MonoProcessor.create();
+                    // setup image available hook
+                    MonoProcessor<Image> inboundAvailable = MonoProcessor.create();
+
+                    AeronOptions options =
+                        this.options
+                            .inboundUri(
+                                this.options
+                                    .inboundUri()
+                                    .uri(b -> b.sessionId(sessionId ^ Integer.MAX_VALUE)))
+                            .onImageAvailable(
+                                image -> {
+                                  logger.debug(
+                                      "{}: created client inbound", Integer.toHexString(sessionId));
+                                  inboundAvailable.onNext(image);
+                                })
+                            .onImageUnavailable(
+                                image -> {
+                                  logger.debug(
+                                      "{}: client inbound became unavailable",
+                                      Integer.toHexString(sessionId));
+                                  disposeHook.onComplete();
+                                });
+
+                    String inboundChannel = options.inboundUri().asString();
                     logger.debug(
                         "{}: creating client connection: {}",
                         Integer.toHexString(sessionId),
                         inboundChannel);
 
-                    // setup cleanup hook to use it onwards
-                    MonoProcessor<Void> disposeHook = MonoProcessor.create();
-                    // setup image avaiable hook
-                    MonoProcessor<Image> inboundAvailable = MonoProcessor.create();
-
                     return resources
-                        .subscription(
-                            inboundChannel,
-                            options.inboundStreamId(),
-                            eventLoop,
-                            image -> {
-                              logger.debug(
-                                  "{}: created client inbound", Integer.toHexString(sessionId));
-                              inboundAvailable.onNext(image);
-                            },
-                            image -> {
-                              logger.debug(
-                                  "{}: client inbound became unavailable",
-                                  Integer.toHexString(sessionId));
-                              disposeHook.onComplete();
-                            })
+                        .subscription(options, eventLoop)
                         .doOnError(
                             th -> {
                               logger.warn(

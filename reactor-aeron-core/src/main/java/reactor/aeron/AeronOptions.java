@@ -1,5 +1,6 @@
 package reactor.aeron;
 
+import io.aeron.Image;
 import java.time.Duration;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -24,6 +25,14 @@ public final class AeronOptions {
   private Duration backpressureTimeout = Duration.ofSeconds(5);
   private Duration adminActionTimeout = Duration.ofSeconds(5);
   private Supplier<Integer> sessionIdGenerator = new SecureRandomSessionIdGenerator();
+  private Consumer<Image> onImageAvailable =
+      image -> {
+        // no-op
+      };
+  private Consumer<Image> onImageUnavailable =
+      image -> {
+        // no-op
+      };
 
   public AeronOptions() {}
 
@@ -39,6 +48,8 @@ public final class AeronOptions {
     this.adminActionTimeout = other.adminActionTimeout;
     this.sessionIdGenerator = other.sessionIdGenerator;
     this.connectRetryCount = other.connectRetryCount;
+    this.onImageAvailable = other.onImageAvailable;
+    this.onImageUnavailable = other.onImageUnavailable;
   }
 
   public AeronResources resources() {
@@ -128,6 +139,22 @@ public final class AeronOptions {
 
   public AeronOptions sessionIdGenerator(Supplier<Integer> sessionIdGenerator) {
     return set(s -> s.sessionIdGenerator = sessionIdGenerator);
+  }
+
+  public Consumer<Image> onImageAvailable() {
+    return onImageAvailable;
+  }
+
+  public AeronOptions onImageAvailable(Consumer<Image> onImageAvailable) {
+    return set(s -> s.onImageAvailable = s.onImageAvailable.andThen(onImageAvailable));
+  }
+
+  public Consumer<Image> onImageUnavailable() {
+    return onImageUnavailable;
+  }
+
+  public AeronOptions onImageUnavailable(Consumer<Image> onImageUnavailable) {
+    return set(s -> s.onImageUnavailable = s.onImageUnavailable.andThen(onImageUnavailable));
   }
 
   private AeronOptions set(Consumer<AeronOptions> c) {

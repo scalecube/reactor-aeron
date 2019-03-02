@@ -43,7 +43,12 @@ final class AeronServerHandler implements OnDisposable {
   private final MonoProcessor<Void> onDispose = MonoProcessor.create();
 
   AeronServerHandler(AeronOptions options) {
-    this.options = options.inboundStreamId(STREAM_ID).outboundStreamId(STREAM_ID);
+    this.options =
+        options
+            .inboundStreamId(STREAM_ID)
+            .outboundStreamId(STREAM_ID)
+            .onImageAvailable(this::onImageAvailable)
+            .onImageUnavailable(this::onImageUnavailable);
     this.resources = options.resources();
     this.handler = options.handler();
 
@@ -65,12 +70,7 @@ final class AeronServerHandler implements OnDisposable {
           logger.debug("Starting {} on: {}", this, acceptorChannel);
 
           return resources
-              .subscription(
-                  acceptorChannel,
-                  options.inboundStreamId(),
-                  resources.firstEventLoop(),
-                  this::onImageAvailable,
-                  this::onImageUnavailable)
+              .subscription(options, resources.firstEventLoop())
               .doOnSuccess(s -> this.acceptorSubscription = s)
               .thenReturn(this)
               .doOnSuccess(handler -> logger.debug("Started {} on: {}", this, acceptorChannel))
