@@ -9,7 +9,7 @@
     <version>0.0.19</version>
   </parent>
 
-  <artifactId>scalecube-reactor-aeron</artifactId>
+  <artifactId>reactor-aeron-parent</artifactId>
   <version>0.1.4-SNAPSHOT</version>
   <packaging>pom</packaging>
 
@@ -37,8 +37,8 @@
   </properties>
 
   <modules>
-    <module>core</module>
-    <module>benchmarks</module>
+    <module>reactor-aeron</module>
+    <module>reactor-aeron-benchmarks</module>
   </modules>
 
   <dependencyManagement>
