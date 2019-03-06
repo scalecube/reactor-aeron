@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoProcessor;
+import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
 public final class AeronResources implements OnDisposable {
@@ -56,6 +57,8 @@ public final class AeronResources implements OnDisposable {
   private Aeron aeron;
   private MediaDriver mediaDriver;
   private AeronEventLoopGroup eventLoopGroup;
+
+  private Scheduler scheduler = Schedulers.newSingle("AeronResources", true);
 
   // Lifecycle
   private final MonoProcessor<Void> start = MonoProcessor.create();
@@ -425,7 +428,7 @@ public final class AeronResources implements OnDisposable {
     return Mono.defer(
         () ->
             aeronPublication(channel, streamId)
-                .subscribeOn(Schedulers.parallel())
+                .subscribeOn(scheduler)
                 .doOnError(
                     ex ->
                         logger.error(
@@ -500,7 +503,7 @@ public final class AeronResources implements OnDisposable {
 
           return aeronSubscription(
                   channel, streamId, options.onImageAvailable(), options.onImageUnavailable())
-              .subscribeOn(Schedulers.parallel())
+              .subscribeOn(scheduler)
               .doOnError(
                   ex ->
                       logger.error(
@@ -591,6 +594,8 @@ public final class AeronResources implements OnDisposable {
 
                     Optional.ofNullable(aeronContext)
                         .ifPresent(c -> IoUtil.delete(c.aeronDirectory(), true));
+
+                    scheduler.dispose();
                   });
         });
   }

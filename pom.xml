@@ -6,10 +6,10 @@
   <parent>
     <groupId>io.scalecube</groupId>
     <artifactId>scalecube-parent-pom</artifactId>
-    <version>0.0.18</version>
+    <version>0.0.19</version>
   </parent>
 
-  <artifactId>scalecube-reactor-aeron</artifactId>
+  <artifactId>reactor-aeron-parent</artifactId>
   <version>0.1.4-SNAPSHOT</version>
   <packaging>pom</packaging>
 
@@ -30,11 +30,15 @@
     <slf4j.version>1.7.7</slf4j.version>
     <log4j.version>2.11.0</log4j.version>
     <disruptor.version>3.4.2</disruptor.version>
+
+    <mockito-junit-jupiter.version>2.17.0</mockito-junit-jupiter.version>
+    <junit-jupiter.version>5.1.0</junit-jupiter.version>
+    <hamcrest.version>1.3</hamcrest.version>
   </properties>
 
   <modules>
-    <module>reactor-aeron-core</module>
-    <module>reactor-aeron-tools</module>
+    <module>reactor-aeron</module>
+    <module>reactor-aeron-benchmarks</module>
   </modules>
 
   <dependencyManagement>
@@ -51,7 +55,7 @@
         <version>${aeron.version}</version>
       </dependency>
 
-
+      <!-- Reactor -->
       <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-bom</artifactId>
@@ -90,26 +94,31 @@
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-engine</artifactId>
+      <version>${junit-jupiter.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-params</artifactId>
+      <version>${junit-jupiter.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-junit-jupiter</artifactId>
+      <version>${mockito-junit-jupiter.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.hamcrest</groupId>
       <artifactId>hamcrest-all</artifactId>
+      <version>${hamcrest.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.hamcrest</groupId>
       <artifactId>hamcrest-core</artifactId>
+      <version>${hamcrest.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
