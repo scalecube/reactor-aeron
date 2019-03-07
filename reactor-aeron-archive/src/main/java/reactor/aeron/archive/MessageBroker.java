@@ -16,8 +16,6 @@ public class MessageBroker {
     String aeronDirName = tmpFileName("aeron");
     String archiveDirName = tmpFileName("archive");
 
-    System.out.println(archiveDirName);
-
     try (ArchivingMediaDriver $ =
         archivingMediaDriver =
             ArchivingMediaDriver.launch(
@@ -37,6 +35,9 @@ public class MessageBroker {
 
       MediaDriver mediaDriver = archivingMediaDriver.mediaDriver();
       Archive archive = archivingMediaDriver.archive();
+
+      System.out.println("archiveDirName: " + archive.context().archiveDirectoryName());
+      System.out.println("aeronDirectoryName: " + mediaDriver.aeronDirectoryName());
 
       Thread.currentThread().join();
     } finally {

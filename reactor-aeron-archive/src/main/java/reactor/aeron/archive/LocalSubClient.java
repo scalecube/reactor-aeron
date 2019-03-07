@@ -1,49 +1,29 @@
 package reactor.aeron.archive;
 
-import io.aeron.Aeron;
 import io.aeron.ChannelUriStringBuilder;
 import io.aeron.Subscription;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.RecordingDescriptorConsumer;
-import io.aeron.driver.MediaDriver;
-import io.aeron.driver.MediaDriver.Context;
-import io.aeron.driver.ThreadingMode;
 import java.time.Duration;
-import java.util.UUID;
-import org.agrona.IoUtil;
 import org.agrona.collections.MutableLong;
 import reactor.core.publisher.Flux;
 
-public class SubClient {
+public class LocalSubClient {
 
-  private static MediaDriver mediaDriver;
-  private static Aeron aeron;
   private static AeronArchive aeronArchive;
 
   public static void main(String[] args) {
 
     try {
-
-      String aeronDirName = tmpFileName("aeron");
-
-      mediaDriver =
-          MediaDriver.launch(
-              new Context()
-                  .threadingMode(ThreadingMode.SHARED)
-                  // .spiesSimulateConnection(false)
-                  .errorHandler(Throwable::printStackTrace)
-                  .aeronDirectoryName(aeronDirName)
-                  .dirDeleteOnStart(true));
-
-      aeron =
-          Aeron.connect(new Aeron.Context().aeronDirectoryName(mediaDriver.aeronDirectoryName()));
+      String aeronDirectoryName =
+          "/var/folders/tx/11bk01r93rv4nhblfzfpmdhr0000gn/T/aeron-segabriel-7693ac95-9306-4744-8c43-8151167f0179";
 
       aeronArchive =
           AeronArchive.connect(
               new AeronArchive.Context()
-                  .aeron(aeron)
-                  .controlResponseChannel("aeron:udp?endpoint=localhost:8022")
-                  .controlResponseStreamId(18022)
+                  .aeronDirectoryName(aeronDirectoryName)
+                  .controlResponseChannel("aeron:udp?endpoint=localhost:8023")
+                  .controlResponseStreamId(18023)
               // .ownsAeronClient(true)
               );
 
@@ -91,29 +71,7 @@ public class SubClient {
       if (aeronArchive != null) {
         aeronArchive.close();
       }
-      if (aeron != null) {
-        aeron.close();
-      }
-      if (mediaDriver != null) {
-        mediaDriver.close();
-      }
-
-      if (aeron != null) {
-        IoUtil.delete(aeron.context().aeronDirectory(), true);
-      }
-      if (mediaDriver != null) {
-        IoUtil.delete(mediaDriver.context().aeronDirectory(), true);
-      }
     }
-  }
-
-  private static String tmpFileName(String value) {
-    return IoUtil.tmpDirName()
-        + value
-        + '-'
-        + System.getProperty("user.name", "default")
-        + '-'
-        + UUID.randomUUID().toString();
   }
 
   private static long findLatestRecording(AeronArchive archive, String CHANNEL, int STREAM_ID) {
