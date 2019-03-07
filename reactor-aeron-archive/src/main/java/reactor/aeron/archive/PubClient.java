@@ -1,18 +1,13 @@
 package reactor.aeron.archive;
 
-import static reactor.aeron.archive.MessageBroker.MY_CHANNEL;
-import static reactor.aeron.archive.MessageBroker.MY_STREAM_ID;
-
 import io.aeron.Aeron;
-import io.aeron.ExclusivePublication;
+import io.aeron.ChannelUriStringBuilder;
 import io.aeron.Publication;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.codecs.SourceLocation;
-import io.aeron.archive.status.RecordingPos;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.MediaDriver.Context;
 import io.aeron.driver.ThreadingMode;
-import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -20,10 +15,8 @@ import org.agrona.BufferUtil;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.SigInt;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.status.CountersReader;
-import reactor.core.publisher.Flux;
 
-public class Client {
+public class PubClient {
 
   private static final UnsafeBuffer BUFFER =
       new UnsafeBuffer(BufferUtil.allocateDirectAligned(256, 64));
@@ -42,7 +35,7 @@ public class Client {
           MediaDriver.launch(
               new Context()
                   .threadingMode(ThreadingMode.SHARED)
-                  .spiesSimulateConnection(false)
+                  // .spiesSimulateConnection(false)
                   .errorHandler(Throwable::printStackTrace)
                   .aeronDirectoryName(aeronDirName)
                   .dirDeleteOnStart(true));
@@ -50,74 +43,28 @@ public class Client {
       aeron =
           Aeron.connect(new Aeron.Context().aeronDirectoryName(mediaDriver.aeronDirectoryName()));
 
-      ExclusivePublication exclusivePublication = aeron
-          .addExclusivePublication(MY_CHANNEL, MY_STREAM_ID);
-
-
-
-//      Flux.interval(Duration.ofMillis(100)).subscribe(i -> {
-//
-//        final String message = "Hello World! " + i;
-//        final byte[] messageBytes = message.getBytes();
-//        BUFFER.putBytes(0, messageBytes);
-//
-//        long workCount = exclusivePublication.offer(BUFFER);
-//
-//
-//      });
-
-
-
-//      Thread.currentThread().join();
-
-
-      //        .controlResponseChannel("aeron:udp?endpoint=localhost:54327")
-      //        .controlResponseStreamId(1001)
       aeronArchive =
           AeronArchive.connect(
               new AeronArchive.Context()
                   .aeron(aeron)
-//                          .controlRequestChannel("aeron:udp?endpoint=localhost:54327")
-//                          .controlResponseChannel("aeron:udp?endpoint=localhost:54327")
-//                          .controlResponseStreamId(1001)
-//                          .controlRequestStreamId(1001)
-                  .ownsAeronClient(true));
+                  .controlResponseChannel("aeron:udp?endpoint=localhost:8021")
+                  .controlResponseStreamId(18021)
+              // .ownsAeronClient(true)
+              );
 
-
-
+      ChannelUriStringBuilder channelUri =
+          new ChannelUriStringBuilder()
+              .endpoint("localhost:54327")
+              .reliable(Boolean.TRUE)
+              .media("udp");
 
       long subscriptionId =
-          aeronArchive.startRecording(
-              "aeron:udp?endpoint=localhost:54327", 2222, SourceLocation.REMOTE);
+          aeronArchive.startRecording(channelUri.build(), 2222, SourceLocation.REMOTE);
 
       final AtomicBoolean running = new AtomicBoolean(true);
       SigInt.register(() -> running.set(false));
 
-      try (Publication publication =
-          aeron
-              .addExclusivePublication("aeron:udp?endpoint=localhost:54327", 2222)) {
-
-
-
-//
-//        // Wait for recording to have started before publishing.
-//        final CountersReader counters = aeronArchive.context().aeron().countersReader();
-//        int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
-//        while (CountersReader.NULL_COUNTER_ID == counterId) {
-//
-//
-//          if (!running.get())
-//          {
-//            return;
-//          }
-//
-//          Thread.yield();
-//          counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
-//          System.out.println(counterId);
-//        }
-
-//        final long recordingId = RecordingPos.getRecordingId(counters, counterId);
-//        System.out.println("Recording started: recordingId = " + recordingId);
+      try (Publication publication = aeron.addExclusivePublication(channelUri.build(), 2222)) {
 
         int n = 100000;
         for (int i = 0; i < n && running.get(); i++) {
@@ -137,14 +84,6 @@ public class Client {
 
           Thread.sleep(TimeUnit.SECONDS.toMillis(1));
         }
-
-//        while (counters.getCounterValue(counterId) < publication.position()) {
-//          if (!RecordingPos.isActive(counters, counterId, recordingId)) {
-//            throw new IllegalStateException("recording has stopped unexpectedly: " + recordingId);
-//          }
-//
-//          Thread.yield();
-//        }
       }
 
     } finally {
