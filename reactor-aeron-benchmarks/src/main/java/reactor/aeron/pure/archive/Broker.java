@@ -1,25 +1,27 @@
 package reactor.aeron.pure.archive;
 
 import io.aeron.Aeron;
+import io.aeron.ChannelUriStringBuilder;
+import io.aeron.CommonContext;
+import io.aeron.Subscription;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.archive.ArchivingMediaDriver;
+import io.aeron.archive.client.AeronArchive;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import reactor.aeron.Configurations;
 
 public class Broker {
 
-  private static final boolean INFO_FLAG = Configurations.INFO_FLAG;
+  public static final String BROKER_CONTROL_ENDPOINT = "localhost:7171";
+  public static final int BROKER_CONTROL_STREAM_ID = 2222;
 
   public static void main(String[] args) throws Exception {
     String aeronDirName = Utils.tmpFileName("aeron");
     String archiveDirName = aeronDirName + "-archive";
 
-    ArchivingMediaDriver archivingMediaDriver = null;
-
-    try (ArchivingMediaDriver $ =
-        archivingMediaDriver =
+    try (ArchivingMediaDriver archivingMediaDriver =
             ArchivingMediaDriver.launch(
                 new MediaDriver.Context()
                     .threadingMode(ThreadingMode.SHARED)
@@ -33,35 +35,57 @@ public class Broker {
                     .threadingMode(ArchiveThreadingMode.SHARED)
                     .errorHandler(Throwable::printStackTrace)
                     .fileSyncLevel(0)
-                    .deleteArchiveOnStart(true))) {
+                    .deleteArchiveOnStart(true));
+        AeronArchive aeronArchive =
+            AeronArchive.connect(
+                new AeronArchive.Context() //
+                    .aeronDirectoryName(aeronDirName)
+                // .aeron(archivingMediaDriver.archive().context().aeron())
+                // .controlResponseChannel("aeron:udp?endpoint=localhost:8021")
+                // .controlResponseStreamId(18021)
+                // .ownsAeronClient(true)
+                ); ) {
+      print(archivingMediaDriver);
 
-      MediaDriver mediaDriver = archivingMediaDriver.mediaDriver();
-      Archive archive = archivingMediaDriver.archive();
+      Aeron aeron = archivingMediaDriver.archive().context().aeron();
 
-      if (INFO_FLAG) {
-        Aeron aeron = archive.context().aeron();
-        aeron.context().availableImageHandler(Configurations::printAvailableImage);
-        aeron.context().unavailableImageHandler(Configurations::printUnavailableImage);
-      }
+      ChannelUriStringBuilder channelUri =
+          new ChannelUriStringBuilder()
+              .endpoint(BROKER_CONTROL_ENDPOINT)
+              .media(CommonContext.UDP_MEDIA);
 
-      System.out.println("Archive has started");
-      System.out.println("Archive has started with threadingMode: " + archivingMediaDriver.archive().context().threadingMode());
-      System.out.println("Archive has started with controlChannel: " + archivingMediaDriver.archive().context().controlChannel());
-      System.out.println("Archive has started with controlStreamId: " + archivingMediaDriver.archive().context().controlStreamId());
-      System.out.println("Archive has started with localControlChannel: " + archivingMediaDriver.archive().context().localControlChannel());
-      System.out.println("Archive has started with localControlStreamId: " + archivingMediaDriver.archive().context().localControlStreamId());
-      System.out.println("Archive has started with recordingEventsChannel: " + archivingMediaDriver.archive().context().recordingEventsChannel());
-      System.out.println("Archive has started with recordingEventsStreamId: " + archivingMediaDriver.archive().context().recordingEventsStreamId());
-      System.out.println("Archive has started with controlTermBufferSparse: " + archivingMediaDriver.archive().context().controlTermBufferSparse());
-      System.out.println("Archive has started with archiveDirName: " + archive.context().archiveDirectoryName());
-      System.out.println("Archive has started with aeronDirectoryName: " + mediaDriver.aeronDirectoryName());
+      Subscription subscription =
+          aeron.addSubscription(
+              channelUri.build(),
+              BROKER_CONTROL_STREAM_ID,
+              image -> {
+                Configurations.printAvailableImage(image);
+              },
+              image -> {
+                Configurations.printUnavailableImage(image);
+              });
 
       Thread.currentThread().join();
     } finally {
-      if (archivingMediaDriver != null) {
-        archivingMediaDriver.archive().context().deleteArchiveDirectory();
-        archivingMediaDriver.mediaDriver().context().deleteAeronDirectory();
-      }
+      Utils.removeFile(archiveDirName);
+      Utils.removeFile(aeronDirName);
     }
+  }
+
+  private static void print(ArchivingMediaDriver archivingMediaDriver) {
+    MediaDriver mediaDriver = archivingMediaDriver.mediaDriver();
+    Archive archive = archivingMediaDriver.archive();
+    Archive.Context context = archivingMediaDriver.archive().context();
+
+    System.out.println("Archive threadingMode: " + context.threadingMode());
+    System.out.println("Archive controlChannel: " + context.controlChannel());
+    System.out.println("Archive controlStreamId: " + context.controlStreamId());
+    System.out.println("Archive localControlChannel: " + context.localControlChannel());
+    System.out.println("Archive localControlStreamId: " + context.localControlStreamId());
+    System.out.println("Archive recordingEventsChannel: " + context.recordingEventsChannel());
+    System.out.println("Archive recordingEventsStreamId: " + context.recordingEventsStreamId());
+    System.out.println("Archive controlTermBufferSparse: " + context.controlTermBufferSparse());
+    System.out.println("Archive archiveDirName: " + archive.context().archiveDirectoryName());
+    System.out.println("Archive aeronDirectoryName: " + mediaDriver.aeronDirectoryName());
   }
 }
