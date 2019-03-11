@@ -44,7 +44,7 @@ public class Broker {
             ArchivingMediaDriver.launch(
                 new MediaDriver.Context()
                     .threadingMode(ThreadingMode.SHARED)
-                    // .spiesSimulateConnection(false)
+                    // .spiesSimulateConnection(true)
                     .errorHandler(Throwable::printStackTrace)
                     .aeronDirectoryName(aeronDirName)
                     .dirDeleteOnStart(true),
@@ -83,12 +83,12 @@ public class Broker {
 
                 String recordingChannel =
                     BROKER_REPLAY_CHANNEL_URI_BUILDER
-                        //                    .sessionId(~image.sessionId())
+                        // .sessionId(~image.sessionId())
                         .build();
 
                 long subscriptionId =
                     aeronArchive.startRecording(
-                        recordingChannel, BROKER_REPLAY_STREAM_ID, SourceLocation.LOCAL);
+                        recordingChannel, BROKER_REPLAY_STREAM_ID, SourceLocation.REMOTE);
 
                 System.out.println(
                     "Created recording subscriptionId: "
