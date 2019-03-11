@@ -1,8 +1,13 @@
 package reactor.aeron;
 
 import io.aeron.driver.Configuration;
+import io.scalecube.trace.TraceReporter;
+import java.io.IOException;
 import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.HdrHistogram.Histogram;
 import org.HdrHistogram.Recorder;
 import org.agrona.BitUtil;
 import org.agrona.BufferUtil;
@@ -12,11 +17,13 @@ import org.agrona.console.ContinueBarrier;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 public final class AeronPingClient {
 
   private static final Recorder HISTOGRAM = new Recorder(TimeUnit.SECONDS.toNanos(10), 3);
-
+  private static final TraceReporter reporter = new TraceReporter();
+  
   /**
    * Main runner.
    *
@@ -76,7 +83,8 @@ public final class AeronPingClient {
     HISTOGRAM.reset();
 
     Disposable reporter = startReport();
-
+    startCollect();
+    
     NanoTimeGeneratorHandler handler = new NanoTimeGeneratorHandler();
 
     connection.outbound().send(Flux.range(0, Configurations.REQUESTED), handler).then().subscribe();
@@ -105,19 +113,41 @@ public final class AeronPingClient {
         .block();
   }
 
-  private static Disposable startReport() {
+  private static Disposable startCollect() {
     return Flux.interval(
             Duration.ofSeconds(Configurations.WARMUP_REPORT_DELAY),
             Duration.ofSeconds(Configurations.REPORT_INTERVAL))
-        .doOnNext(AeronPingClient::report)
-        .doFinally(AeronPingClient::report)
+        .publishOn(Schedulers.single())
+        .doOnNext(AeronPingClient::collect)
         .subscribe();
   }
 
+  private static Disposable startReport() {
+    return Flux.interval(
+            Duration.ofSeconds(Configurations.WARMUP_REPORT_DELAY+60),
+            Duration.ofSeconds(Configurations.REPORT_INTERVAL+60))
+        .publishOn(Schedulers.single())
+        .doOnNext(AeronPingClient::report)
+        .subscribe();
+  }
+  
   private static void report(Object ignored) {
-    System.out.println("---- PING/PONG HISTO ----");
-    HISTOGRAM.getIntervalHistogram().outputPercentileDistribution(System.out, 5, 1000.0, false);
-    System.out.println("---- PING/PONG HISTO ----");
+    reporter.dumpTo("./target/traces/");
+    
+    // System.out.println("---- PING/PONG HISTO ----");
+    // HISTOGRAM.getIntervalHistogram().outputPercentileDistribution(System.out, 5, 1000.0, false);
+    // System.out.println("---- PING/PONG HISTO ----");
+  }
+  
+  private static void collect(Object ignored) {
+    Histogram h = HISTOGRAM.getIntervalHistogram();
+    
+    reporter.addY("reactor-aeron-latency-mean", h.getMean() / 1000.0);
+    reporter.addY("reactor-aeron-latency-99p", h.getPercentileAtOrBelowValue(99) / 1000.0);
+    
+    // System.out.println("---- PING/PONG HISTO ----");
+     HISTOGRAM.getIntervalHistogram().outputPercentileDistribution(System.out, 5, 1000.0, false);
+    // System.out.println("---- PING/PONG HISTO ----");
   }
 
   private static class NanoTimeGeneratorHandler implements DirectBufferHandler<Object> {

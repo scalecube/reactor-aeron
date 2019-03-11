@@ -1,5 +1,6 @@
 package reactor.aeron;
 
+import io.scalecube.trace.TraceReporter;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
@@ -19,6 +20,8 @@ public class RateReporter implements Runnable, Disposable {
   private long lastTotalBytes;
   private long lastTotalMessages;
   private long lastTimestamp;
+
+  private static final TraceReporter traceReporter = new TraceReporter();
 
   public RateReporter() {
     this(RateReporter::printRate);
@@ -56,6 +59,8 @@ public class RateReporter implements Runnable, Disposable {
     lastTotalBytes = currentTotalBytes;
     lastTotalMessages = currentTotalMessages;
     lastTimestamp = currentTimestamp;
+
+    traceReporter.addY("reactor-aeron-throughput", messagesPerSec);
   }
 
   @Override
@@ -84,9 +89,12 @@ public class RateReporter implements Runnable, Disposable {
       final double bytesPerSec,
       final long totalFragments,
       final long totalBytes) {
+
     System.out.format(
         "%.07g msgs/sec, %.07g MB/sec, totals %d messages %d MB payloads%n",
         messagesPerSec, bytesPerSec / (1024 * 1024), totalFragments, totalBytes / (1024 * 1024));
+
+    traceReporter.dumpTo("./target/traces/");
   }
 
   /** Interface for reporting of rate information. */

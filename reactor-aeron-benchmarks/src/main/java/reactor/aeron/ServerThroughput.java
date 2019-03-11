@@ -4,6 +4,7 @@ import io.aeron.driver.Configuration;
 
 public class ServerThroughput {
 
+ 
   /**
    * Main runner.
    *
@@ -22,7 +23,7 @@ public class ServerThroughput {
             .block();
 
     RateReporter reporter = new RateReporter();
-
+    
     AeronServer.create(aeronResources)
         .options(
             Configurations.MDC_ADDRESS, Configurations.MDC_PORT, Configurations.MDC_CONTROL_PORT)
