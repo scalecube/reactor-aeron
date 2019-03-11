@@ -18,11 +18,12 @@ public class PubClient {
 
   private static final String BROKER_CONTROL_CHANNEL_URI =
       new ChannelUriStringBuilder()
-          .endpoint(Broker.BROKER_CONTROL_ENDPOINT)
+          .controlEndpoint(Broker.BROKER_REPLAY_ENDPOINT)
+          .controlMode(CommonContext.MDC_CONTROL_MODE_DYNAMIC)
           .reliable(Boolean.TRUE)
           .media(CommonContext.UDP_MEDIA)
           .build();
-  private static final int BROKER_CONTROL_STREAM_ID = Broker.BROKER_CONTROL_STREAM_ID;
+  private static final int BROKER_CONTROL_STREAM_ID = Broker.BROKER_REPLAY_STREAM_ID;
 
   private static final UnsafeBuffer BUFFER =
       new UnsafeBuffer(BufferUtil.allocateDirectAligned(256, 64));

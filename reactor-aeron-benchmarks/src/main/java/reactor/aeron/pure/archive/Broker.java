@@ -82,8 +82,11 @@ public class Broker {
                 Configurations.printAvailableImage(image);
 
                 String recordingChannel =
-                    BROKER_REPLAY_CHANNEL_URI_BUILDER
-                        // .sessionId(~image.sessionId())
+                    new ChannelUriStringBuilder()
+                        .controlEndpoint(BROKER_REPLAY_ENDPOINT)
+                        .reliable(Boolean.TRUE)
+                        .media(CommonContext.UDP_MEDIA)
+                        // .sessionId(image.sessionId())
                         .build();
 
                 long subscriptionId =

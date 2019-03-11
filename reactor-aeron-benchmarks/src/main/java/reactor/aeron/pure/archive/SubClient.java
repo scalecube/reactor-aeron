@@ -1,8 +1,6 @@
 package reactor.aeron.pure.archive;
 
 import io.aeron.Aeron;
-import io.aeron.ChannelUriStringBuilder;
-import io.aeron.CommonContext;
 import io.aeron.Subscription;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.MediaDriver.Context;
@@ -13,12 +11,8 @@ import reactor.core.publisher.Flux;
 
 public class SubClient {
 
-  private static final String CHANNEL = new ChannelUriStringBuilder()
-      .controlEndpoint(Broker.BROKER_REPLAY_ENDPOINT)
-      .controlMode(CommonContext.MDC_CONTROL_MODE_DYNAMIC)
-      .reliable(Boolean.TRUE)
-      .media(CommonContext.UDP_MEDIA)
-      .build();
+  private static final String CHANNEL =
+      "aeron:udp?control=localhost:8181|control-mode=dynamic|reliable=true";
   private static final int STREAM_ID = Broker.BROKER_REPLAY_STREAM_ID;
 
   public static void main(String[] args) {
