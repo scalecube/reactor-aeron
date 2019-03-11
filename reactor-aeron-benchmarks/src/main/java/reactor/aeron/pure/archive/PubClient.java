@@ -16,6 +16,14 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public class PubClient {
 
+  private static final String BROKER_CONTROL_CHANNEL_URI =
+      new ChannelUriStringBuilder()
+          .endpoint(Broker.BROKER_CONTROL_ENDPOINT)
+          .reliable(Boolean.TRUE)
+          .media(CommonContext.UDP_MEDIA)
+          .build();
+  private static final int BROKER_CONTROL_STREAM_ID = Broker.BROKER_CONTROL_STREAM_ID;
+
   private static final UnsafeBuffer BUFFER =
       new UnsafeBuffer(BufferUtil.allocateDirectAligned(256, 64));
 
@@ -37,17 +45,11 @@ public class PubClient {
       aeron =
           Aeron.connect(new Aeron.Context().aeronDirectoryName(mediaDriver.aeronDirectoryName()));
 
-      ChannelUriStringBuilder channelUri =
-          new ChannelUriStringBuilder()
-              .endpoint(Broker.BROKER_CONTROL_ENDPOINT)
-              .reliable(Boolean.TRUE)
-              .media(CommonContext.UDP_MEDIA);
-
       final AtomicBoolean running = new AtomicBoolean(true);
       SigInt.register(() -> running.set(false));
 
       try (Publication publication =
-          aeron.addExclusivePublication(channelUri.build(), Broker.BROKER_CONTROL_STREAM_ID)) {
+          aeron.addExclusivePublication(BROKER_CONTROL_CHANNEL_URI, BROKER_CONTROL_STREAM_ID)) {
 
         int n = 100000;
         for (int i = 0; i < n && running.get(); i++) {
