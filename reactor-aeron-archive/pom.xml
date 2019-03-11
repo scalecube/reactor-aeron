@@ -5,8 +5,8 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <artifactId>scalecube-reactor-aeron</artifactId>
     <groupId>io.scalecube</groupId>
+    <artifactId>reactor-aeron-parent</artifactId>
     <version>0.1.4-SNAPSHOT</version>
   </parent>
 
@@ -15,7 +15,7 @@
   <dependencies>
     <dependency>
       <groupId>io.scalecube</groupId>
-      <artifactId>reactor-aeron-core</artifactId>
+      <artifactId>reactor-aeron</artifactId>
       <version>${project.version}</version>
     </dependency>
 

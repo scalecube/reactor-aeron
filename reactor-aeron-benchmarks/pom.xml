@@ -12,16 +12,16 @@
 
   <parent>
     <groupId>io.scalecube</groupId>
-    <artifactId>scalecube-reactor-aeron</artifactId>
+    <artifactId>reactor-aeron-parent</artifactId>
     <version>0.1.4-SNAPSHOT</version>
   </parent>
 
-  <artifactId>reactor-aeron-tools</artifactId>
+  <artifactId>reactor-aeron-benchmarks</artifactId>
 
   <dependencies>
     <dependency>
       <groupId>io.scalecube</groupId>
-      <artifactId>reactor-aeron-core</artifactId>
+      <artifactId>reactor-aeron</artifactId>
       <version>${project.version}</version>
     </dependency>
 
@@ -152,7 +152,7 @@
         </exclusion>
         <exclusion>
           <groupId>io.scalecube</groupId>
-          <artifactId>reactor-aeron-core</artifactId>
+          <artifactId>reactor-aeron</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
