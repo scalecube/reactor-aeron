@@ -8,14 +8,33 @@ import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.archive.ArchivingMediaDriver;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.client.RecordingDescriptorConsumer;
+import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import org.agrona.collections.MutableLong;
 import reactor.aeron.Configurations;
 
 public class Broker {
 
   public static final String BROKER_CONTROL_ENDPOINT = "localhost:7171";
   public static final int BROKER_CONTROL_STREAM_ID = 2222;
+  public static final String BROKER_REPLAY_ENDPOINT = "localhost:8181";
+  public static final int BROKER_REPLAY_STREAM_ID = 2223;
+
+  private static final String BROKER_CONTROL_URI =
+      new ChannelUriStringBuilder()
+          .endpoint(BROKER_CONTROL_ENDPOINT)
+          .reliable(Boolean.TRUE)
+          .media(CommonContext.UDP_MEDIA)
+          .build();
+
+  private static final ChannelUriStringBuilder BROKER_REPLAY_CHANNEL_URI_BUILDER =
+      new ChannelUriStringBuilder()
+          .controlEndpoint(BROKER_REPLAY_ENDPOINT)
+          .controlMode(CommonContext.MDC_CONTROL_MODE_DYNAMIC)
+          .reliable(Boolean.TRUE)
+          .media(CommonContext.UDP_MEDIA);
 
   public static void main(String[] args) throws Exception {
     String aeronDirName = Utils.tmpFileName("aeron");
@@ -47,19 +66,53 @@ public class Broker {
                 ); ) {
       print(archivingMediaDriver);
 
-      Aeron aeron = archivingMediaDriver.archive().context().aeron();
+      Aeron aeron = aeronArchive.context().aeron();
 
-      ChannelUriStringBuilder channelUri =
-          new ChannelUriStringBuilder()
-              .endpoint(BROKER_CONTROL_ENDPOINT)
-              .media(CommonContext.UDP_MEDIA);
+      aeron.addSubscription(
+          BROKER_REPLAY_CHANNEL_URI_BUILDER.build(),
+          BROKER_REPLAY_STREAM_ID,
+          Configurations::printAvailableImage,
+          Configurations::printUnavailableImage);
 
       Subscription subscription =
           aeron.addSubscription(
-              channelUri.build(),
+              BROKER_CONTROL_URI,
               BROKER_CONTROL_STREAM_ID,
               image -> {
                 Configurations.printAvailableImage(image);
+
+                String recordingChannel =
+                    BROKER_REPLAY_CHANNEL_URI_BUILDER
+                        //                    .sessionId(~image.sessionId())
+                        .build();
+
+                long subscriptionId =
+                    aeronArchive.startRecording(
+                        recordingChannel, BROKER_REPLAY_STREAM_ID, SourceLocation.LOCAL);
+
+                System.out.println(
+                    "Created recording subscriptionId: "
+                        + subscriptionId
+                        + ", for channel: "
+                        + recordingChannel
+                        + ", streamId: "
+                        + BROKER_REPLAY_STREAM_ID);
+
+                // long recordingId = findLatestRecording(aeronArchive, recordingChannel,
+                //     BROKER_REPLAY_STREAM_ID);
+
+                // final long sessionId =
+                //     aeronArchive.startReplay(
+                //         recordingId, 0, Long.MAX_VALUE, recordingChannel,
+                // BROKER_REPLAY_STREAM_ID);
+
+                // System.out.println(
+                //     "Started replaying, recordingId: "
+                //         + recordingId
+                //         + ", replay channel: "
+                //         + BROKER_REPLAY_CHANNEL_URI_BUILDER.sessionId((int) sessionId).build()
+                //         + ", streamId: "
+                //         + BROKER_REPLAY_STREAM_ID);
               },
               image -> {
                 Configurations.printUnavailableImage(image);
@@ -87,5 +140,43 @@ public class Broker {
     System.out.println("Archive controlTermBufferSparse: " + context.controlTermBufferSparse());
     System.out.println("Archive archiveDirName: " + archive.context().archiveDirectoryName());
     System.out.println("Archive aeronDirectoryName: " + mediaDriver.aeronDirectoryName());
+
+    System.out.println("Archive listen: " + BROKER_CONTROL_URI);
+  }
+
+  private static long findLatestRecording(
+      final AeronArchive archive, String channel, int channelStreamId) {
+    final MutableLong lastRecordingId = new MutableLong();
+
+    final RecordingDescriptorConsumer consumer =
+        (controlSessionId,
+            correlationId,
+            recordingId,
+            startTimestamp,
+            stopTimestamp,
+            startPosition,
+            stopPosition,
+            initialTermId,
+            segmentFileLength,
+            termBufferLength,
+            mtuLength,
+            sessionId,
+            streamId,
+            strippedChannel,
+            originalChannel,
+            sourceIdentity) -> lastRecordingId.set(recordingId);
+
+    final long fromRecordingId = 0L;
+    final int recordCount = 100;
+
+    final int foundCount =
+        archive.listRecordingsForUri(
+            fromRecordingId, recordCount, channel, channelStreamId, consumer);
+
+    if (foundCount == 0) {
+      throw new IllegalStateException("no recordings found");
+    }
+
+    return lastRecordingId.get();
   }
 }
