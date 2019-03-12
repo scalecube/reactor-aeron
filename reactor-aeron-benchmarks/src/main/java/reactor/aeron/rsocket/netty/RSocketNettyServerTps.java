@@ -1,20 +1,19 @@
 package reactor.aeron.rsocket.netty;
 
+import static io.rsocket.frame.decoder.PayloadDecoder.ZERO_COPY;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelOption;
 import io.rsocket.AbstractRSocket;
-import io.rsocket.Frame;
 import io.rsocket.Payload;
 import io.rsocket.RSocketFactory;
 import io.rsocket.transport.netty.server.TcpServerTransport;
 import io.rsocket.util.ByteBufPayload;
 import java.util.Random;
-import java.util.concurrent.Callable;
 import reactor.aeron.Configurations;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 import reactor.netty.resources.LoopResources;
 import reactor.netty.tcp.TcpServer;
 
@@ -59,7 +58,7 @@ public final class RSocketNettyServerTps {
             .doOnConnection(System.out::println);
 
     RSocketFactory.receive()
-        .frameDecoder(Frame::retain)
+        .frameDecoder(ZERO_COPY)
         .acceptor(
             (setupPayload, rsocket) -> {
               System.out.println(rsocket);
@@ -72,12 +71,8 @@ public final class RSocketNettyServerTps {
                       long msgNum = Configurations.NUMBER_OF_MESSAGES;
                       System.out.println("streaming " + msgNum + " messages ...");
 
-                      Callable<Payload> payloadCallable =
-                          () -> ByteBufPayload.create(BUFFER.retainedSlice());
-
-                      return Mono.fromCallable(payloadCallable)
-                          .subscribeOn(Schedulers.parallel())
-                          .repeat(msgNum);
+                      return Flux.range(0, Integer.MAX_VALUE)
+                          .map(i -> ByteBufPayload.create(BUFFER.retainedSlice()));
                     }
                   });
             })
