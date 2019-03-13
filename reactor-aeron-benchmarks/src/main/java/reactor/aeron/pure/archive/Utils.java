@@ -10,6 +10,11 @@ public class Utils {
     // no-op
   }
 
+  /**
+   * Creates tmp file with using the given value.
+   *
+   * @param value target.
+   */
   public static String tmpFileName(String value) {
     return IoUtil.tmpDirName()
         + value
@@ -19,9 +24,12 @@ public class Utils {
         + UUID.randomUUID().toString();
   }
 
+  /**
+   * Creates tmp file with using the given value.
+   *
+   * @param value target.
+   */
   public static void removeFile(String value) {
-//    IoUtil.deleteIfExists(new File(value));
     IoUtil.delete(new File(value), true);
-
   }
 }

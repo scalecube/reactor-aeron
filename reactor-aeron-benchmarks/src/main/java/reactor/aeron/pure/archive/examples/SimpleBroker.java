@@ -1,4 +1,4 @@
-package reactor.aeron.pure.archive;
+package reactor.aeron.pure.archive.examples;
 
 import io.aeron.Aeron;
 import io.aeron.ChannelUriStringBuilder;
@@ -14,13 +14,14 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import org.agrona.collections.MutableLong;
 import reactor.aeron.Configurations;
+import reactor.aeron.pure.archive.Utils;
 
-public class Broker {
+public class SimpleBroker {
 
-  public static final String BROKER_CONTROL_ENDPOINT = "localhost:7171";
-  public static final int BROKER_CONTROL_STREAM_ID = 2222;
-  public static final String BROKER_REPLAY_ENDPOINT = "localhost:8181";
-  public static final int BROKER_REPLAY_STREAM_ID = 2223;
+  static final String BROKER_CONTROL_ENDPOINT = "localhost:7171";
+  static final int BROKER_CONTROL_STREAM_ID = 2222;
+  static final String BROKER_REPLAY_ENDPOINT = "localhost:8181";
+  static final int BROKER_REPLAY_STREAM_ID = 2223;
 
   private static final ChannelUriStringBuilder BROKER_CONTROL_URI_BUILDER =
       new ChannelUriStringBuilder()
@@ -35,6 +36,11 @@ public class Broker {
           .reliable(Boolean.TRUE)
           .media(CommonContext.UDP_MEDIA);
 
+  /**
+   * Main runner.
+   *
+   * @param args program arguments.
+   */
   public static void main(String[] args) throws Exception {
     String aeronDirName = Utils.tmpFileName("aeron");
     String archiveDirName = aeronDirName + "-archive";
