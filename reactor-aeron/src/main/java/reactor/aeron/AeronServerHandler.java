@@ -94,7 +94,7 @@ final class AeronServerHandler implements OnDisposable {
     // Pub(control-endpoint{address:serverControlPort}, xor(sessionId))->MDC(xor(sessionId))
     int sessionId = image.sessionId();
     String outboundChannel =
-        options.outboundUri().uri(b -> b.sessionId(sessionId ^ Integer.MAX_VALUE)).asString();
+        options.outboundUri().uri(b -> b.sessionId(~sessionId)).asString();
 
     logger.debug(
         "{}: creating server connection: {}", Integer.toHexString(sessionId), outboundChannel);
