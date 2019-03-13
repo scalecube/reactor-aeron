@@ -1,8 +1,7 @@
 package reactor.aeron.rsocket.aeron;
 
-import static io.rsocket.frame.decoder.PayloadDecoder.ZERO_COPY;
-
 import io.aeron.driver.Configuration;
+import io.rsocket.Frame;
 import io.rsocket.Payload;
 import io.rsocket.RSocket;
 import io.rsocket.RSocketFactory;
@@ -35,7 +34,7 @@ public final class RSocketAeronClientTps {
 
     RSocket client =
         RSocketFactory.connect()
-            .frameDecoder(ZERO_COPY)
+            .frameDecoder(Frame::retain)
             .transport(
                 () ->
                     new AeronClientTransport(

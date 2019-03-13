@@ -9,5 +9,4 @@ java \
     -cp target/${JAR_FILE}:target/lib/* \
     -XX:+UnlockDiagnosticVMOptions \
     -XX:GuaranteedSafepointInterval=300000 \
-    -Dreactor.bufferSize.small=1024 \
     ${JVM_OPTS} reactor.aeron.rsocket.netty.RSocketNettyClientTps

@@ -1,11 +1,10 @@
 package reactor.aeron.rsocket.netty;
 
-import static io.rsocket.frame.decoder.PayloadDecoder.ZERO_COPY;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelOption;
 import io.rsocket.AbstractRSocket;
+import io.rsocket.Frame;
 import io.rsocket.Payload;
 import io.rsocket.RSocketFactory;
 import io.rsocket.transport.netty.server.TcpServerTransport;
@@ -58,7 +57,7 @@ public final class RSocketNettyServerTps {
             .doOnConnection(System.out::println);
 
     RSocketFactory.receive()
-        .frameDecoder(ZERO_COPY)
+        .frameDecoder(Frame::retain)
         .acceptor(
             (setupPayload, rsocket) -> {
               System.out.println(rsocket);

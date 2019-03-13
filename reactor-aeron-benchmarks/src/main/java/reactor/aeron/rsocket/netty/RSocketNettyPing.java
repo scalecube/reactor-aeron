@@ -1,10 +1,9 @@
 package reactor.aeron.rsocket.netty;
 
-import static io.rsocket.frame.decoder.PayloadDecoder.ZERO_COPY;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelOption;
+import io.rsocket.Frame;
 import io.rsocket.Payload;
 import io.rsocket.RSocket;
 import io.rsocket.RSocketFactory;
@@ -66,7 +65,7 @@ public final class RSocketNettyPing {
 
     RSocket client =
         RSocketFactory.connect()
-            .frameDecoder(ZERO_COPY)
+            .frameDecoder(Frame::retain)
             .transport(() -> TcpClientTransport.create(tcpClient))
             .start()
             .doOnSuccess(System.out::println)
