@@ -46,10 +46,7 @@ public final class AeronResources implements OnDisposable {
           .warnIfDirectoryExists(true)
           .dirDeleteOnStart(true)
           // low latency settings
-          .termBufferSparseFile(false)
-          // explicit range of reserved session ids
-          .publicationReservedSessionIdLow(0)
-          .publicationReservedSessionIdHigh(Integer.MAX_VALUE);
+          .termBufferSparseFile(false);
 
   private Supplier<IdleStrategy> workerIdleStrategySupplier = defaultBackoffIdleStrategySupplier;
 
