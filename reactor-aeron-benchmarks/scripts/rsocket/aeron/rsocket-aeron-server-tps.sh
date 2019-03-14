@@ -14,7 +14,7 @@ java \
     -Dagrona.disable.bounds.checks=true \
     -Dreactor.aeron.sample.idle.strategy=yielding \
     -Dreactor.aeron.sample.frameCountLimit=16384 \
-    -Dreactor.aeron.sample.messageLength=2048 \
+    -Dreactor.aeron.sample.messageLength=1024 \
     -Daeron.mtu.length=16k \
     -Daeron.socket.so_sndbuf=2m \
     -Daeron.socket.so_rcvbuf=2m \
