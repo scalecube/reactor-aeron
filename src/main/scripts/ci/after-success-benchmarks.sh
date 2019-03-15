@@ -5,12 +5,12 @@ remoteBenchmarks() {
     tokenreq='{"username":"'$SCALECUBE_CD_USERNAME'","password":"'$SCALECUBE_CD_PASSWORD'"}'
     token=$(curl -X POST -H "Content-Type: application/json" -d "$tokenreq" ${CD_SERVER}auth | jq -r '.access_token')
     authorization="Authorization: Bearer $token"
-    buildreq='{"branch":"'$TRAVIS_PULL_REQUEST_BRANCH'", \
-               "pull_request":"'$TRAVIS_PULL_REQUEST'", \
-               "repo_slug":"'$TRAVIS_REPO_SLUG'", \
-               "github_user":"'$GITHUBUSER'", \
-               "github_token":"'$GITHUBTOKEN'", \
-               "sha": "'$TRAVIS_PULL_REQUEST_SHA'"}'
+    buildreq='{"branch":"'$TRAVIS_PULL_REQUEST_BRANCH'",
+               "pull_request":"'$TRAVIS_PULL_REQUEST'",
+               "repo_slug":"'$TRAVIS_REPO_SLUG'",
+               "github_user":"'$GITHUBUSER'",
+               "github_token":"'$GITHUBTOKEN'",
+               "sha":"'$TRAVIS_PULL_REQUEST_SHA'"}'
     curl -d """$buildreq""" -H "Content-Type: application/json" -H "$authorization" -X POST ${CD_SERVER}benchmark/aeron_test
 }
 
