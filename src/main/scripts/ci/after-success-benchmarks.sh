@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+TRAVIS_PULL_REWUEST=false
 remoteBenchmarks() {
     echo ++++ Remote benchmarks ++++
     tokenreq='{"username":"'$SCALECUBE_CD_USERNAME'","password":"'$SCALECUBE_CD_PASSWORD'"}'
@@ -12,8 +13,8 @@ remoteBenchmarks() {
 if [ ! "$TRAVIS_PULL_REQUEST" == "false" ]; then
     BENCHMARKS=$(curl -s -u "$GITHUBUSER:$GITHUBTOKEN" https://api.github.com/repos/$TRAVIS_REPO_SLUG/pulls/$TRAVIS_PULL_REQUEST | jq ".labels[].name | select (.==\"$BENCHMARKS_LABEL\")")
     if [ ! -z "$BENCHMARKS" ]; then
-        remoteBenchmarks()
-    fi
+        remoteBenchmarks
+    fi 
 fi
 
 
