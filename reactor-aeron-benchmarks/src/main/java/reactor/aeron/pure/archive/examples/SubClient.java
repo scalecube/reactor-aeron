@@ -18,7 +18,7 @@ public class SubClient {
       new ChannelUriStringBuilder()
           .controlEndpoint(SimpleBroker.BROKER_REPLAY_ENDPOINT)
           .controlMode(CommonContext.MDC_CONTROL_MODE_DYNAMIC)
-          .sessionId(-1328843850 /*todo NOTICE: always need to change!!!*/)
+          // .sessionId(-1328843850 /*todo NOTICE: always need to change!!!*/)
           .reliable(Boolean.TRUE)
           .media(CommonContext.UDP_MEDIA)
           .build();
