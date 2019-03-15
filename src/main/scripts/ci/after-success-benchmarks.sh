@@ -9,11 +9,11 @@ remoteBenchmarks() {
     curl -d """$buildreq""" -H "Content-Type: application/json" -H "$authorization" -X POST ${CD_SERVER}aeron_test
 }
 
-BENCHMARKS=$(curl -s -u "$GITHUBUSER:$GITHUBTOKEN" https://api.github.com/repos/$TRAVIS_REPO_SLUG/pulls/$TRAVIS_PULL_REQUEST | jq ".labels[].name | select (.==\"$BENCHMARKS_LABEL\")")
-
-if [ ! -z "$BENCHMARKS" ]
-then
-    remoteBenchmarks()
+if [ ! "$TRAVIS_PULL_REQUEST" == "false" ]; then
+    BENCHMARKS=$(curl -s -u "$GITHUBUSER:$GITHUBTOKEN" https://api.github.com/repos/$TRAVIS_REPO_SLUG/pulls/$TRAVIS_PULL_REQUEST | jq ".labels[].name | select (.==\"$BENCHMARKS_LABEL\")")
+    if [ ! -z "$BENCHMARKS" ]; then
+        remoteBenchmarks()
+    fi
 fi
 
 
