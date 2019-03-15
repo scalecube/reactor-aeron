@@ -62,15 +62,19 @@ public class SubClient {
 
                         System.out.println(
                             String.format(
-                                "Message to stream %d from session %d (%d@%d) <<%s>>, header{ pos: %s, offset: %s, type: %s}",
-                                STREAM_ID,
-                                header.sessionId(),
-                                length,
+                                "msg{ offset: %s, length: %s, body: %s }, header{ pos: %s, offset: %s, type: %s }, channel { stream: %s, session: %s, initialTermId: %s, termId: %s, termOffset: %s, flags: %s }",
                                 offset,
+                                length,
                                 new String(data),
                                 header.position(),
                                 header.offset(),
-                                header.type()));
+                                header.type(),
+                                STREAM_ID,
+                                header.sessionId(),
+                                header.initialTermId(),
+                                header.termId(),
+                                header.termOffset(),
+                                header.flags()));
                       },
                       10))
           .blockLast();

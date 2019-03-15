@@ -124,7 +124,10 @@ public class IntermediateArchive {
 
                 System.out.println("Found new recording id: " + recordingId);
 
-                String replayChannel = REPLAY_URI_BUILDER.sessionId(sessionId).build();
+                String replayChannel =
+                    REPLAY_URI_BUILDER
+                        // .sessionId(sessionId)
+                        .build();
                 int replayStreamId = REPLAY_STREAM_ID;
 
                 final long replaySessionId =
