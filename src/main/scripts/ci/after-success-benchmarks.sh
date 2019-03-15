@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-TRAVIS_PULL_REWUEST=false
 remoteBenchmarks() {
     echo ++++ Remote benchmarks ++++
     tokenreq='{"username":"'$SCALECUBE_CD_USERNAME'","password":"'$SCALECUBE_CD_PASSWORD'"}'
@@ -16,5 +15,3 @@ if [ ! "$TRAVIS_PULL_REQUEST" == "false" ]; then
         remoteBenchmarks
     fi 
 fi
-
-
