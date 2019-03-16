@@ -129,22 +129,25 @@ public final class AeronPingClient {
   }
 
   private static void report(Object ignored) {
-    reporter.dumpTo("./target/traces/");
-
-    // System.out.println("---- PING/PONG HISTO ----");
-    // HISTOGRAM.getIntervalHistogram().outputPercentileDistribution(System.out, 5, 1000.0, false);
-    // System.out.println("---- PING/PONG HISTO ----");
+    if(reporter.isActive()) {
+      reporter.dumpTo(reporter.tracesEnv());
+    } else {
+     System.out.println("---- PING/PONG HISTO ----");
+     HISTOGRAM.getIntervalHistogram().outputPercentileDistribution(System.out, 5, 1000.0, false);
+     System.out.println("---- PING/PONG HISTO ----");
+    }
   }
 
   private static void collect(Object ignored) {
     Histogram h = HISTOGRAM.getIntervalHistogram();
 
-    reporter.addY("reactor-aeron-latency-mean", h.getMean() / 1000.0);
-    reporter.addY("reactor-aeron-latency-99p", h.getPercentileAtOrBelowValue(99) / 1000.0);
-
-    // System.out.println("---- PING/PONG HISTO ----");
-    // HISTOGRAM.getIntervalHistogram().outputPercentileDistribution(System.out, 5, 1000.0, false);
-    // System.out.println("---- PING/PONG HISTO ----");
+    if(reporter.isActive()) {
+      reporter.addY("reactor-aeron-latency-mean", h.getMean() / 1000.0);
+    } else {
+     System.out.println("---- PING/PONG HISTO ----");
+     h.outputPercentileDistribution(System.out, 5, 1000.0, false);
+     System.out.println("---- PING/PONG HISTO ----");
+    }
   }
 
   private static class NanoTimeGeneratorHandler implements DirectBufferHandler<Object> {

@@ -60,7 +60,9 @@ public class RateReporter implements Runnable, Disposable {
     lastTotalMessages = currentTotalMessages;
     lastTimestamp = currentTimestamp;
 
-    traceReporter.addY("reactor-aeron-throughput", messagesPerSec);
+    if (traceReporter.isActive()) {
+      traceReporter.addY("reactor-aeron-throughput", messagesPerSec);
+    }
   }
 
   @Override
@@ -90,11 +92,13 @@ public class RateReporter implements Runnable, Disposable {
       final long totalFragments,
       final long totalBytes) {
 
-    System.out.format(
-        "%.07g msgs/sec, %.07g MB/sec, totals %d messages %d MB payloads%n",
-        messagesPerSec, bytesPerSec / (1024 * 1024), totalFragments, totalBytes / (1024 * 1024));
-
-    traceReporter.dumpTo("./target/traces/");
+    if (traceReporter.isActive()) {
+      traceReporter.dumpTo("./target/traces/");
+    } else {
+      System.out.format(
+          "%.07g msgs/sec, %.07g MB/sec, totals %d messages %d MB payloads%n",
+          messagesPerSec, bytesPerSec / (1024 * 1024), totalFragments, totalBytes / (1024 * 1024));
+    }
   }
 
   /** Interface for reporting of rate information. */
