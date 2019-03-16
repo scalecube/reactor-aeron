@@ -121,32 +121,39 @@ public final class AeronPingClient {
 
   private static Disposable startReport() {
     return Flux.interval(
-            Duration.ofSeconds(Configurations.WARMUP_REPORT_DELAY + 60),
-            Duration.ofSeconds(Configurations.REPORT_INTERVAL + 60))
+            Duration.ofSeconds(Configurations.WARMUP_REPORT_DELAY),
+            Duration.ofSeconds(Configurations.REPORT_INTERVAL + 30))
         .publishOn(Schedulers.single())
         .doOnNext(AeronPingClient::report)
         .subscribe();
   }
 
   private static void report(Object ignored) {
-    if(reporter.isActive()) {
-      reporter.dumpTo(reporter.tracesEnv());
+    if (reporter.isActive()) {
+      reporter
+          .sendToJsonbin()
+          .subscribe(
+              res -> {
+                if (res.success()) {
+                  reporter.dumpToFile(reporter.tracesEnv() + "latency/", res.name(), res).subscribe();
+                }
+              });
     } else {
-     System.out.println("---- PING/PONG HISTO ----");
-     HISTOGRAM.getIntervalHistogram().outputPercentileDistribution(System.out, 5, 1000.0, false);
-     System.out.println("---- PING/PONG HISTO ----");
+      System.out.println("---- PING/PONG HISTO ----");
+      HISTOGRAM.getIntervalHistogram().outputPercentileDistribution(System.out, 5, 1000.0, false);
+      System.out.println("---- PING/PONG HISTO ----");
     }
   }
 
   private static void collect(Object ignored) {
     Histogram h = HISTOGRAM.getIntervalHistogram();
 
-    if(reporter.isActive()) {
+    if (reporter.isActive()) {
       reporter.addY("reactor-aeron-latency-mean", h.getMean() / 1000.0);
     } else {
-     System.out.println("---- PING/PONG HISTO ----");
-     h.outputPercentileDistribution(System.out, 5, 1000.0, false);
-     System.out.println("---- PING/PONG HISTO ----");
+      System.out.println("---- PING/PONG HISTO ----");
+      h.outputPercentileDistribution(System.out, 5, 1000.0, false);
+      System.out.println("---- PING/PONG HISTO ----");
     }
   }
 

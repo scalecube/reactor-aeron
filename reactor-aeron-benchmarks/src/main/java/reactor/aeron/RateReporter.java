@@ -39,6 +39,11 @@ public class RateReporter implements Runnable, Disposable {
     disposable =
         Schedulers.single()
             .schedulePeriodically(this, reportDelayNs, reportIntervalNs, TimeUnit.NANOSECONDS);
+    
+    if (traceReporter.isActive()) {
+      traceReporter.scheduleDumpTo(Duration.ofSeconds(30), traceReporter.tracesEnv()+"throughput/");
+    } 
+    
   }
 
   @Override
@@ -92,13 +97,11 @@ public class RateReporter implements Runnable, Disposable {
       final long totalFragments,
       final long totalBytes) {
 
-    if (traceReporter.isActive()) {
-      traceReporter.dumpTo("./target/traces/");
-    } else {
+    
       System.out.format(
           "%.07g msgs/sec, %.07g MB/sec, totals %d messages %d MB payloads%n",
           messagesPerSec, bytesPerSec / (1024 * 1024), totalFragments, totalBytes / (1024 * 1024));
-    }
+    
   }
 
   /** Interface for reporting of rate information. */
