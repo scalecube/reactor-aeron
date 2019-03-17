@@ -76,7 +76,7 @@ public class ServerThroughput {
     final AtomicBoolean running = new AtomicBoolean(true);
     SigInt.register(() -> running.set(false));
 
-    RateReporter reporter = new RateReporter();
+    RateReporter reporter = new RateReporter("./target/traces/throughput/", "pure-aeron");
 
     try (Aeron aeron = Aeron.connect(ctx);
         Subscription subscription = aeron.addSubscription(INBOUND_CHANNEL, STREAM_ID);

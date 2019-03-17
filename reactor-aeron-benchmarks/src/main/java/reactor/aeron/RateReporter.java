@@ -20,11 +20,15 @@ public class RateReporter implements Runnable, Disposable {
   private long lastTotalBytes;
   private long lastTotalMessages;
   private long lastTimestamp;
+  private String name;
+  private String location;
 
   private static final TraceReporter traceReporter = new TraceReporter();
 
-  public RateReporter() {
+  public RateReporter(String location, String name) {
     this(RateReporter::printRate);
+    this.name = name;
+    this.location = location;
   }
 
   /**
@@ -41,7 +45,7 @@ public class RateReporter implements Runnable, Disposable {
             .schedulePeriodically(this, reportDelayNs, reportIntervalNs, TimeUnit.NANOSECONDS);
     
     if (traceReporter.isActive()) {
-      traceReporter.scheduleDumpTo(Duration.ofSeconds(30), traceReporter.tracesEnv()+"throughput/");
+      traceReporter.scheduleDumpTo(Duration.ofSeconds(30), location);
     } 
     
   }
@@ -59,15 +63,14 @@ public class RateReporter implements Runnable, Disposable {
     final double bytesPerSec =
         ((currentTotalBytes - lastTotalBytes) * (double) reportIntervalNs) / (double) timeSpanNs;
 
+    if (traceReporter.isActive()) {
+      traceReporter.addY(name, messagesPerSec);
+    }
     reporter.onReport(messagesPerSec, bytesPerSec, currentTotalMessages, currentTotalBytes);
 
     lastTotalBytes = currentTotalBytes;
     lastTotalMessages = currentTotalMessages;
     lastTimestamp = currentTimestamp;
-
-    if (traceReporter.isActive()) {
-      traceReporter.addY("reactor-aeron-throughput", messagesPerSec);
-    }
   }
 
   @Override

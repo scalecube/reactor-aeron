@@ -46,7 +46,7 @@ public final class RSocketAeronClientTps {
             .start()
             .block();
 
-    RateReporter reporter = new RateReporter();
+    RateReporter reporter = new RateReporter("./target/traces/throughput/", "rsocket-aeron");
 
     Payload request = ByteBufPayload.create("hello");
 

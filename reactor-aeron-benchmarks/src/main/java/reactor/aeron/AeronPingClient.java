@@ -135,7 +135,7 @@ public final class AeronPingClient {
           .subscribe(
               res -> {
                 if (res.success()) {
-                  reporter.dumpToFile(reporter.tracesEnv() + "latency/", res.name(), res).subscribe();
+                  reporter.dumpToFile(reporter.tracesLocation() + "latency/", res.name(), res).subscribe();
                 }
               });
     } else {
