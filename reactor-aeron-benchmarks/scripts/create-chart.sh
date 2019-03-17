@@ -10,7 +10,11 @@ LATEST_VERSION_JAR=https://github.com/scalecube/trace-reporter/blob/latest/relea
 cd $(dirname $0)
 cd ../
 
-wget ${LATEST_VERSION_JAR} -O ./target/trace-reporter.jar
+
+if [ ! -f ./target/trace-reporter.jar ]; then
+    echo "trace-reporter File not found! ... downloading...."
+    wget ${LATEST_VERSION_JAR} -O ./target/trace-reporter.jar
+fi
 
 java \
     -jar ./target/trace-reporter.jar -i ./target/traces/latency -o ./target/charts -t ./src/main/resources/latency-report.json
