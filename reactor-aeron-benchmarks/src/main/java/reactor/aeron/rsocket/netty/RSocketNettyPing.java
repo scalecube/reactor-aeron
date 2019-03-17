@@ -15,6 +15,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import org.HdrHistogram.Recorder;
 import reactor.aeron.Configurations;
+import reactor.aeron.LatencyReporter;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.netty.resources.ConnectionProvider;
@@ -24,7 +25,9 @@ import reactor.netty.tcp.TcpClient;
 public final class RSocketNettyPing {
 
   private static final Recorder HISTOGRAM = new Recorder(TimeUnit.SECONDS.toNanos(10), 3);
-
+  private static final LatencyReporter latencyReporter =
+      new LatencyReporter(HISTOGRAM, "rsocket-netty-latency-mean");
+  
   private static final ByteBuf BUFFER =
       ByteBufAllocator.DEFAULT.buffer(Configurations.MESSAGE_LENGTH);
 
@@ -71,7 +74,7 @@ public final class RSocketNettyPing {
             .doOnSuccess(System.out::println)
             .block();
 
-    Disposable report = startReport();
+    Disposable report = latencyReporter.start();
 
     Supplier<Payload> payloadSupplier = () -> ByteBufPayload.create(BUFFER.retainedSlice());
 
@@ -95,20 +98,5 @@ public final class RSocketNettyPing {
         .doFinally(s -> report.dispose())
         .then()
         .block();
-  }
-
-  private static Disposable startReport() {
-    return Flux.interval(
-            Duration.ofSeconds(Configurations.WARMUP_REPORT_DELAY),
-            Duration.ofSeconds(Configurations.REPORT_INTERVAL))
-        .doOnNext(RSocketNettyPing::report)
-        .doFinally(RSocketNettyPing::report)
-        .subscribe();
-  }
-
-  private static void report(Object ignored) {
-    System.out.println("---- PING/PONG HISTO ----");
-    HISTOGRAM.getIntervalHistogram().outputPercentileDistribution(System.out, 5, 1000.0, false);
-    System.out.println("---- PING/PONG HISTO ----");
   }
 }

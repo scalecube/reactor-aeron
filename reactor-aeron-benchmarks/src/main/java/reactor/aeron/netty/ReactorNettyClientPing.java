@@ -15,6 +15,7 @@ import java.util.concurrent.TimeUnit;
 import org.HdrHistogram.Recorder;
 import org.agrona.console.ContinueBarrier;
 import reactor.aeron.Configurations;
+import reactor.aeron.LatencyReporter;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -28,6 +29,9 @@ import reactor.netty.tcp.TcpClient;
 public class ReactorNettyClientPing {
 
   private static final Recorder HISTOGRAM = new Recorder(TimeUnit.SECONDS.toNanos(10), 3);
+
+  private static final LatencyReporter latencyReporter =
+      new LatencyReporter(HISTOGRAM, "reactor-netty-latency-mean");
 
   private static final ByteBuf PAYLOAD =
       ByteBufAllocator.DEFAULT.buffer(Configurations.MESSAGE_LENGTH);
@@ -91,7 +95,7 @@ public class ReactorNettyClientPing {
   private static void roundTripMessages(Connection connection, long count) {
     HISTOGRAM.reset();
 
-    Disposable reporter = startReport();
+    Disposable disp = latencyReporter.start();
 
     connection
         .outbound()
@@ -120,27 +124,9 @@ public class ReactorNettyClientPing {
                 .map(buffer -> 1))
         .then(
             Mono.defer(
-                () ->
-                    Mono.delay(Duration.ofMillis(100))
-                        .doOnSubscribe(s -> reporter.dispose())
-                        .then()))
+                () -> Mono.delay(Duration.ofMillis(100)).doOnSubscribe(s -> disp.dispose()).then()))
         .then()
         .block();
-  }
-
-  private static Disposable startReport() {
-    return Flux.interval(
-            Duration.ofSeconds(Configurations.WARMUP_REPORT_DELAY),
-            Duration.ofSeconds(Configurations.REPORT_INTERVAL))
-        .doOnNext(ReactorNettyClientPing::report)
-        .doFinally(ReactorNettyClientPing::report)
-        .subscribe();
-  }
-
-  private static void report(Object ignored) {
-    System.out.println("---- PING/PONG HISTO ----");
-    HISTOGRAM.getIntervalHistogram().outputPercentileDistribution(System.out, 5, 1000.0, false);
-    System.out.println("---- PING/PONG HISTO ----");
   }
 
   private static void setupChannel(Channel channel) {

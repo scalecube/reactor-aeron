@@ -1,10 +1,8 @@
 package reactor.aeron;
 
 import io.aeron.driver.Configuration;
-import io.scalecube.trace.TraceReporter;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
-import org.HdrHistogram.Histogram;
 import org.HdrHistogram.Recorder;
 import org.agrona.BitUtil;
 import org.agrona.BufferUtil;
@@ -14,13 +12,12 @@ import org.agrona.console.ContinueBarrier;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 
 public final class AeronPingClient {
 
   private static final Recorder HISTOGRAM = new Recorder(TimeUnit.SECONDS.toNanos(10), 3);
-  private static final TraceReporter reporter = new TraceReporter();
-
+  private static final LatencyReporter reporter =
+      new LatencyReporter(HISTOGRAM, "reactor-aeron-latency-mean");
   /**
    * Main runner.
    *
@@ -79,8 +76,7 @@ public final class AeronPingClient {
   private static void roundTripMessages(AeronConnection connection, long count) {
     HISTOGRAM.reset();
 
-    Disposable reporter = startReport();
-    startCollect();
+    Disposable disp = reporter.start();
 
     NanoTimeGeneratorHandler handler = new NanoTimeGeneratorHandler();
 
@@ -104,57 +100,10 @@ public final class AeronPingClient {
             Mono.defer(
                 () ->
                     Mono.delay(Duration.ofMillis(100))
-                        .doOnSubscribe(s -> reporter.dispose())
+                        .doOnSubscribe(s -> disp.dispose())
                         .then()))
         .then()
         .block();
-  }
-
-  private static Disposable startCollect() {
-    return Flux.interval(
-            Duration.ofSeconds(Configurations.WARMUP_REPORT_DELAY),
-            Duration.ofSeconds(Configurations.REPORT_INTERVAL))
-        .publishOn(Schedulers.single())
-        .doOnNext(AeronPingClient::collect)
-        .subscribe();
-  }
-
-  private static Disposable startReport() {
-    return Flux.interval(
-            Duration.ofSeconds(Configurations.WARMUP_REPORT_DELAY),
-            Duration.ofSeconds(Configurations.REPORT_INTERVAL + 30))
-        .publishOn(Schedulers.single())
-        .doOnNext(AeronPingClient::report)
-        .subscribe();
-  }
-
-  private static void report(Object ignored) {
-    if (reporter.isActive()) {
-      reporter
-          .sendToJsonbin()
-          .subscribe(
-              res -> {
-                if (res.success()) {
-                  reporter.dumpToFile(reporter.tracesLocation() + "latency/", res.name(), res).subscribe();
-                }
-              });
-    } else {
-      System.out.println("---- PING/PONG HISTO ----");
-      HISTOGRAM.getIntervalHistogram().outputPercentileDistribution(System.out, 5, 1000.0, false);
-      System.out.println("---- PING/PONG HISTO ----");
-    }
-  }
-
-  private static void collect(Object ignored) {
-    Histogram h = HISTOGRAM.getIntervalHistogram();
-
-    if (reporter.isActive()) {
-      reporter.addY("reactor-aeron-latency-mean", h.getMean() / 1000.0);
-    } else {
-      System.out.println("---- PING/PONG HISTO ----");
-      h.outputPercentileDistribution(System.out, 5, 1000.0, false);
-      System.out.println("---- PING/PONG HISTO ----");
-    }
   }
 
   private static class NanoTimeGeneratorHandler implements DirectBufferHandler<Object> {
