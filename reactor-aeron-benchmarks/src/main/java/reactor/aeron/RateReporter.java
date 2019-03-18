@@ -47,7 +47,8 @@ public class RateReporter implements Runnable, Disposable {
             .schedulePeriodically(this, reportDelayNs, reportIntervalNs, TimeUnit.NANOSECONDS);
 
     if (traceReporter.isActive()) {
-      traceReporter.scheduleDumpTo(Duration.ofSeconds(30), location);
+      traceReporter.scheduleDumpTo(
+          Duration.ofSeconds(Configurations.TRACE_REPORTER_INTERVAL), location);
     }
   }
 

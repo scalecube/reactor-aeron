@@ -40,18 +40,20 @@ public class LatencyReporter {
   }
 
   private Disposable startReport(String folder) {
-    long reportInterval = Configurations.REPORT_INTERVAL;
-
-    if (reporter.isActive()) {
-      reportInterval = Configurations.TRACE_REPORTER_INTERVAL;
-    }
-
     return Flux.interval(
             Duration.ofSeconds(Configurations.WARMUP_REPORT_DELAY),
-            Duration.ofSeconds(reportInterval))
+            Duration.ofSeconds(getReportInterval()))
         .publishOn(Schedulers.single())
         .doOnNext(i -> this.report(folder))
         .subscribe();
+  }
+
+  private long getReportInterval() {
+    if (reporter.isActive()) {
+      return Configurations.TRACE_REPORTER_INTERVAL;
+    } else {
+      return Configurations.REPORT_INTERVAL;
+    }
   }
 
   private void report(String folder) {
