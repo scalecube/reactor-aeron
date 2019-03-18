@@ -10,8 +10,9 @@ import reactor.core.scheduler.Schedulers;
 /** Tracker and reporter of throughput rates. */
 public class RateReporter implements Runnable, Disposable {
 
-  private final static String TARGET_FOLDER =
-      System.getProperty("reactor.aeron.report.folder.throughput", "./target/traces/reports/throughput/");
+  private static final String TARGET_FOLDER =
+      System.getProperty(
+          "reactor.aeron.report.folder.throughput", "./target/traces/reports/throughput/");
 
   private final long reportIntervalNs;
   private final Reporter reporter;
@@ -24,19 +25,15 @@ public class RateReporter implements Runnable, Disposable {
   private long lastTotalMessages;
   private long lastTimestamp;
   private String name;
-  private String location;
 
   private static final TraceReporter traceReporter = new TraceReporter();
 
-  
   public RateReporter(String name) {
-    this(TARGET_FOLDER,name);
+    this(TARGET_FOLDER, name);
   }
-  
+
   public RateReporter(String location, String name) {
-    this(RateReporter::printRate);
-    this.name = name;
-    this.location = location;
+    this(RateReporter::printRate, location, name);
   }
 
   /**
@@ -44,18 +41,18 @@ public class RateReporter implements Runnable, Disposable {
    *
    * @param reporter reporter function
    */
-  public RateReporter(Reporter reporter) {
+  private RateReporter(Reporter reporter, String location, String name) {
+    this.name = name;
     long reportDelayNs = Duration.ofSeconds(Configurations.WARMUP_REPORT_DELAY).toNanos();
     this.reportIntervalNs = Duration.ofSeconds(Configurations.REPORT_INTERVAL).toNanos();
     this.reporter = reporter;
     disposable =
         Schedulers.single()
             .schedulePeriodically(this, reportDelayNs, reportIntervalNs, TimeUnit.NANOSECONDS);
-    
+
     if (traceReporter.isActive()) {
       traceReporter.scheduleDumpTo(Duration.ofSeconds(30), location);
-    } 
-    
+    }
   }
 
   @Override
@@ -108,11 +105,9 @@ public class RateReporter implements Runnable, Disposable {
       final long totalFragments,
       final long totalBytes) {
 
-    
-      System.out.format(
-          "%.07g msgs/sec, %.07g MB/sec, totals %d messages %d MB payloads%n",
-          messagesPerSec, bytesPerSec / (1024 * 1024), totalFragments, totalBytes / (1024 * 1024));
-    
+    System.out.format(
+        "%.07g msgs/sec, %.07g MB/sec, totals %d messages %d MB payloads%n",
+        messagesPerSec, bytesPerSec / (1024 * 1024), totalFragments, totalBytes / (1024 * 1024));
   }
 
   /** Interface for reporting of rate information. */

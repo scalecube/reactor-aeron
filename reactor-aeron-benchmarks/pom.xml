@@ -31,7 +31,7 @@
     <dependency>
       <groupId>io.scalecube</groupId>
       <artifactId>trace-reporter</artifactId>
-      <version>0.0.5</version>
+      <version>0.0.6-SNAPSHOT</version>
     </dependency>
     
     <dependency>

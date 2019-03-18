@@ -17,7 +17,7 @@ fi
 
 FOLDER_LATENCY=./target/traces/reports/latency/
 FOLDER_THROUGHPUT=./target/traces/reports/throughput/
-FOLDER_OUTPUT=./target/reports/charts
+FOLDER_OUTPUT=./target/reports/charts/
 
 java \
     -jar ./target/trace-reporter.jar -i ${FOLDER_LATENCY} -o ${FOLDER_OUTPUT} -t ./src/main/resources/latency-report.json
