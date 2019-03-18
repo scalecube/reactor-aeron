@@ -10,10 +10,6 @@ import reactor.core.scheduler.Schedulers;
 /** Tracker and reporter of throughput rates. */
 public class RateReporter implements Runnable, Disposable {
 
-  private static final String TARGET_FOLDER =
-      System.getProperty(
-          "reactor.aeron.report.folder.throughput", "./target/traces/reports/throughput/");
-
   private final long reportIntervalNs;
   private final Reporter reporter;
   private final Disposable disposable;
@@ -29,7 +25,7 @@ public class RateReporter implements Runnable, Disposable {
   private static final TraceReporter traceReporter = new TraceReporter();
 
   public RateReporter(String name) {
-    this(TARGET_FOLDER, name);
+    this(Configurations.TARGET_FOLDER_FOLDER_THROUGHPUT, name);
   }
 
   public RateReporter(String location, String name) {
@@ -51,7 +47,8 @@ public class RateReporter implements Runnable, Disposable {
             .schedulePeriodically(this, reportDelayNs, reportIntervalNs, TimeUnit.NANOSECONDS);
 
     if (traceReporter.isActive()) {
-      traceReporter.scheduleDumpTo(Duration.ofSeconds(30), location);
+      traceReporter.scheduleDumpTo(
+          Duration.ofSeconds(Configurations.TRACE_REPORTER_INTERVAL), location);
     }
   }
 
