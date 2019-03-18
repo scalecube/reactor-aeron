@@ -8,7 +8,6 @@ import io.rsocket.RSocket;
 import io.rsocket.RSocketFactory;
 import io.rsocket.reactor.aeron.AeronClientTransport;
 import io.rsocket.util.ByteBufPayload;
-import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.HdrHistogram.Recorder;
 import reactor.aeron.AeronClient;
@@ -22,9 +21,8 @@ public final class RSocketAeronPing {
 
   private static final Recorder HISTOGRAM = new Recorder(TimeUnit.SECONDS.toNanos(10), 3);
   private static final LatencyReporter latencyReporter =
-      new LatencyReporter(HISTOGRAM, "rsocket-aeron-latency-mean");
+      new LatencyReporter(HISTOGRAM, "rsocket-aeron-" + Configurations.name());
 
-  
   private static final Payload PAYLOAD =
       ByteBufPayload.create(ByteBufAllocator.DEFAULT.buffer(Configurations.MESSAGE_LENGTH));
 

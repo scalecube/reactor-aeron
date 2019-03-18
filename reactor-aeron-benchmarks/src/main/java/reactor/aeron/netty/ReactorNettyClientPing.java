@@ -31,7 +31,7 @@ public class ReactorNettyClientPing {
   private static final Recorder HISTOGRAM = new Recorder(TimeUnit.SECONDS.toNanos(10), 3);
 
   private static final LatencyReporter latencyReporter =
-      new LatencyReporter(HISTOGRAM, "reactor-netty-latency-mean");
+      new LatencyReporter(HISTOGRAM, "reactor-netty-" + Configurations.name());
 
   private static final ByteBuf PAYLOAD =
       ByteBufAllocator.DEFAULT.buffer(Configurations.MESSAGE_LENGTH);

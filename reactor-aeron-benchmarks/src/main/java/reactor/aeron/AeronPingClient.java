@@ -17,8 +17,8 @@ public final class AeronPingClient {
 
   private static final Recorder HISTOGRAM = new Recorder(TimeUnit.SECONDS.toNanos(10), 3);
   private static final LatencyReporter reporter =
-      new LatencyReporter(HISTOGRAM, "reactor-aeron-latency-mean");
-  
+      new LatencyReporter(HISTOGRAM, "reactor-aeron-" + Configurations.name());
+
   /**
    * Main runner.
    *
@@ -99,10 +99,7 @@ public final class AeronPingClient {
             handler)
         .then(
             Mono.defer(
-                () ->
-                    Mono.delay(Duration.ofMillis(100))
-                        .doOnSubscribe(s -> disp.dispose())
-                        .then()))
+                () -> Mono.delay(Duration.ofMillis(100)).doOnSubscribe(s -> disp.dispose()).then()))
         .then()
         .block();
   }

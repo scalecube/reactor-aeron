@@ -46,7 +46,7 @@ public final class RSocketAeronClientTps {
             .start()
             .block();
 
-    RateReporter reporter = new RateReporter("rsocket-aeron");
+    RateReporter reporter = new RateReporter("rsocket-aeron-" + Configurations.MESSAGE_LENGTH);
 
     Payload request = ByteBufPayload.create("hello");
 

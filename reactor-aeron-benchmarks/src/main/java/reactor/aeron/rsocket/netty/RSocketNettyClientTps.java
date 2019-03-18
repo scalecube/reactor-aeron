@@ -51,7 +51,7 @@ public final class RSocketNettyClientTps {
             .doOnSuccess(System.out::println)
             .block();
 
-    RateReporter reporter = new RateReporter("rsocket-netty");
+    RateReporter reporter = new RateReporter("rsocket-netty-" + Configurations.MESSAGE_LENGTH);
 
     Payload request = ByteBufPayload.create("hello");
 

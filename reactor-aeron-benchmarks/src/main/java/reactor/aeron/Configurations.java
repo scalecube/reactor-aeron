@@ -114,4 +114,8 @@ public interface Configurations {
             "Unavailable image on %s streamId=%d sessionId=%d",
             subscription.channel(), subscription.streamId(), image.sessionId()));
   }
+
+  static String name() {
+    return Configurations.NUMBER_OF_MESSAGES + "x" + Configurations.MESSAGE_LENGTH;
+  }
 }

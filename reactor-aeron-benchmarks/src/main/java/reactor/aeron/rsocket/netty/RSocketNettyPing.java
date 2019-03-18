@@ -9,7 +9,6 @@ import io.rsocket.RSocket;
 import io.rsocket.RSocketFactory;
 import io.rsocket.transport.netty.client.TcpClientTransport;
 import io.rsocket.util.ByteBufPayload;
-import java.time.Duration;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -26,8 +25,8 @@ public final class RSocketNettyPing {
 
   private static final Recorder HISTOGRAM = new Recorder(TimeUnit.SECONDS.toNanos(10), 3);
   private static final LatencyReporter latencyReporter =
-      new LatencyReporter(HISTOGRAM, "rsocket-netty-latency-mean");
-  
+      new LatencyReporter(HISTOGRAM, "rsocket-netty-" + Configurations.name());
+
   private static final ByteBuf BUFFER =
       ByteBufAllocator.DEFAULT.buffer(Configurations.MESSAGE_LENGTH);
 
