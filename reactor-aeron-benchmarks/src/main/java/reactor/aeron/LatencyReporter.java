@@ -15,9 +15,6 @@ public class LatencyReporter {
 
   private final Recorder histogram;
 
-  private final String targetFolder =
-      System.getProperty("reactor.aeron.report.folder.latency", "./target/traces/reports/latency/");
-
   private String name;
 
   public LatencyReporter(Recorder histogram, String name) {
@@ -29,7 +26,6 @@ public class LatencyReporter {
     return Disposables.composite(startReport(), startCollect());
   }
 
-  
   private Disposable startCollect() {
     return Flux.interval(
             Duration.ofSeconds(Configurations.WARMUP_REPORT_DELAY),
@@ -40,13 +36,19 @@ public class LatencyReporter {
   }
 
   private Disposable startReport() {
-    return startReport(targetFolder);
+    return startReport(Configurations.TARGET_FOLDER_FOLDER_LATENCY);
   }
 
   private Disposable startReport(String folder) {
+    long reportInterval = Configurations.REPORT_INTERVAL;
+
+    if (reporter.isActive()) {
+      reportInterval = Configurations.TRACE_REPORTER_INTERVAL;
+    }
+
     return Flux.interval(
             Duration.ofSeconds(Configurations.WARMUP_REPORT_DELAY),
-            Duration.ofSeconds(Configurations.REPORT_INTERVAL + 30))
+            Duration.ofSeconds(reportInterval))
         .publishOn(Schedulers.single())
         .doOnNext(i -> this.report(folder))
         .subscribe();
