@@ -18,6 +18,7 @@ public final class AeronPingClient {
   private static final Recorder HISTOGRAM = new Recorder(TimeUnit.SECONDS.toNanos(10), 3);
   private static final LatencyReporter reporter =
       new LatencyReporter(HISTOGRAM, "reactor-aeron-latency-mean");
+  
   /**
    * Main runner.
    *

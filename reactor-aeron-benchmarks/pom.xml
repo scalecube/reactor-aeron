@@ -10,7 +10,6 @@
     <rsocket-transport-aeron.version>0.1.12</rsocket-transport-aeron.version>
     <hdrhistogram.version>2.1.10</hdrhistogram.version>
     <jmh.version>1.21</jmh.version>
-    <checkstyle.skip>true</checkstyle.skip>
   </properties>
 
   <parent>

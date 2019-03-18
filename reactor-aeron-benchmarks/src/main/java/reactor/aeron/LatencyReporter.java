@@ -15,7 +15,7 @@ public class LatencyReporter {
 
   private final Recorder histogram;
 
-  private final String TARGET_FOLDER =
+  private final String targetFolder =
       System.getProperty("reactor.aeron.report.folder.latency", "./target/traces/reports/latency/");
 
   private String name;
@@ -26,10 +26,11 @@ public class LatencyReporter {
   }
 
   public Disposable start() {
-    return Disposables.composite(startReport(),startCollect());
+    return Disposables.composite(startReport(), startCollect());
   }
+
   
-  public Disposable startCollect() {
+  private Disposable startCollect() {
     return Flux.interval(
             Duration.ofSeconds(Configurations.WARMUP_REPORT_DELAY),
             Duration.ofSeconds(Configurations.REPORT_INTERVAL))
@@ -38,11 +39,11 @@ public class LatencyReporter {
         .subscribe();
   }
 
-  public Disposable startReport() {
-    return startReport(TARGET_FOLDER);
+  private Disposable startReport() {
+    return startReport(targetFolder);
   }
 
-  public Disposable startReport(String folder) {
+  private Disposable startReport(String folder) {
     return Flux.interval(
             Duration.ofSeconds(Configurations.WARMUP_REPORT_DELAY),
             Duration.ofSeconds(Configurations.REPORT_INTERVAL + 30))
@@ -51,7 +52,7 @@ public class LatencyReporter {
         .subscribe();
   }
 
-  public void report(String folder) {
+  private void report(String folder) {
     if (reporter.isActive()) {
       reporter
           .sendToJsonbin()
@@ -68,7 +69,7 @@ public class LatencyReporter {
     }
   }
 
-  public void collect() {
+  private void collect() {
     Histogram h = histogram.getIntervalHistogram();
 
     if (reporter.isActive()) {
@@ -79,6 +80,4 @@ public class LatencyReporter {
       System.out.println("---- PING/PONG HISTO ----");
     }
   }
-
-  
 }
