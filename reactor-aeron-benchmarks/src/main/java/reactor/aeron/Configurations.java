@@ -116,6 +116,6 @@ public interface Configurations {
   }
 
   static String name() {
-    return Configurations.NUMBER_OF_MESSAGES + "x" + Configurations.MESSAGE_LENGTH;
+    return String.valueOf(MESSAGE_LENGTH);
   }
 }
