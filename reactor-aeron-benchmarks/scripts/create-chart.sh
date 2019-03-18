@@ -5,19 +5,22 @@
 # $CHARTS_FOLDER : folder where chart reports is created
 # $CHART_TEMPLATE : based on which chart is created
 
-LATEST_VERSION_JAR=https://github.com/scalecube/trace-reporter/blob/latest/release/trace-reporter-jar-with-dependencies.jar?raw=true
-
 cd $(dirname $0)
 cd ../
 
-
 if [ ! -f ./target/trace-reporter.jar ]; then
-    echo "trace-reporter File not found! ... downloading...."
+	echo "trace-reporter.jar File not found! ... downloading...."
+	LATEST_VERSION_JAR=https://github.com/scalecube/trace-reporter/blob/latest/release/trace-reporter-jar-with-dependencies.jar?raw=true
     wget ${LATEST_VERSION_JAR} -O ./target/trace-reporter.jar
 fi
 
+
+FOLDER_LATENCY=./target/traces/reports/latency/
+FOLDER_THROUGHPUT=./target/traces/reports/throughput/
+FOLDER_OUTPUT=./target/reports/charts
+
 java \
-    -jar ./target/trace-reporter.jar -i ./target/traces/latency -o ./target/charts -t ./src/main/resources/latency-report.json
+    -jar ./target/trace-reporter.jar -i ${FOLDER_LATENCY} -o ${FOLDER_OUTPUT} -t ./src/main/resources/latency-report.json
     
 java \
-    -jar ./target/trace-reporter.jar -i ./target/traces/throughput -o ./target/charts -t ./src/main/resources/throughput-report.json    
+    -jar ./target/trace-reporter.jar -i ${FOLDER_THROUGHPUT} -o ${FOLDER_OUTPUT} -t ./src/main/resources/throughput-report.json    

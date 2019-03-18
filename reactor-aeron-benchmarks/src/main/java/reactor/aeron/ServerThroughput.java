@@ -22,7 +22,7 @@ public class ServerThroughput {
             .start()
             .block();
 
-    RateReporter reporter = new RateReporter("./target/traces/throughput/","reactor-aeron");
+    RateReporter reporter = new RateReporter("reactor-aeron");
     
     AeronServer.create(aeronResources)
         .options(

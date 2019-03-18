@@ -51,7 +51,7 @@ public final class RSocketNettyClientTps {
             .doOnSuccess(System.out::println)
             .block();
 
-    RateReporter reporter = new RateReporter("./target/traces/throughput/", "rsocket-netty");
+    RateReporter reporter = new RateReporter("rsocket-netty");
 
     Payload request = ByteBufPayload.create("hello");
 

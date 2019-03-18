@@ -15,8 +15,8 @@ public class LatencyReporter {
 
   private final Recorder histogram;
 
-  private final String TARGET_TRACES_LATENCY_FOLDER =
-      System.getProperty("reactor.aeron.report.latency.folder", "./target/traces/latency/");
+  private final String TARGET_FOLDER =
+      System.getProperty("reactor.aeron.report.folder.latency", "./target/traces/reports/latency/");
 
   private String name;
 
@@ -39,7 +39,7 @@ public class LatencyReporter {
   }
 
   public Disposable startReport() {
-    return startReport(TARGET_TRACES_LATENCY_FOLDER);
+    return startReport(TARGET_FOLDER);
   }
 
   public Disposable startReport(String folder) {
