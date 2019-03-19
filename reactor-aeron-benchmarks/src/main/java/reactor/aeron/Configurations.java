@@ -37,14 +37,12 @@ public interface Configurations {
   long REPORT_INTERVAL = Long.getLong("reactor.aeron.sample.report.interval", 1);
   long TRACE_REPORTER_INTERVAL = Long.getLong("reactor.aeron.sample.report.interval", 60);
   long WARMUP_REPORT_DELAY = Long.getLong("reactor.aeron.sample.report.delay", REPORT_INTERVAL);
-
   String TARGET_FOLDER_FOLDER_LATENCY =
       System.getProperty(
-          "reactor.aeron.report.traces.folder.latency", "./target/traces/reports/latency/");
-
+          "reactor.aeron.report.traces.folder.latency", "./traces/reports/latency/");
   String TARGET_FOLDER_FOLDER_THROUGHPUT =
       System.getProperty(
-          "reactor.aeron.report.traces.folder.throughput", "./target/traces/reports/throughput/");
+          "reactor.aeron.report.traces.folder.throughput", "./traces/reports/throughput/");
 
   /**
    * Returns idle strategy.
