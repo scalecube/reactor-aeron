@@ -16,7 +16,6 @@ import reactor.aeron.pure.archive.Utils;
 
 public class MatchEngineEventHandler {
 
-  private static final String INCOMING_URI = MatchEngine.OUTGOING_URI;
   private static final String REPLAY_URI =
       new ChannelUriStringBuilder()
           .controlEndpoint(MatchEngine.OUTGOING_ENDPOINT)
@@ -24,8 +23,7 @@ public class MatchEngineEventHandler {
           .reliable(Boolean.TRUE)
           .media(CommonContext.UDP_MEDIA)
           .build();
-  private static final int INCOMING_STREAM_ID = MatchEngine.OUTGOING_STREAM_ID;
-  private static final int REPLAY_STREAM_ID = MatchEngine.OUTGOING_REPLAY_STREAM_ID + 1;
+  private static final int REPLAY_STREAM_ID = 2225;
   private static final int FRAGMENT_LIMIT = 10;
 
   /**
@@ -50,11 +48,13 @@ public class MatchEngineEventHandler {
         AeronArchive aeronArchive =
             AeronArchive.connect(
                 new AeronArchive.Context()
-                    .controlResponseChannel("aeron:udp?endpoint=localhost:8025")
-                    .controlResponseStreamId(18025)
+                    .controlResponseChannel("aeron:udp?endpoint=localhost:8026")
+                    .controlResponseStreamId(18026)
                     .aeronDirectoryName(aeronDirName))) {
 
-      long recordingId = findLatestRecording(aeronArchive, INCOMING_URI, INCOMING_STREAM_ID);
+      long recordingId =
+          findLatestRecording(
+              aeronArchive, MatchEngine.OUTGOING_URI, MatchEngine.OUTGOING_STREAM_ID);
 
       System.out.println("recordingId: " + recordingId);
 
@@ -88,7 +88,7 @@ public class MatchEngineEventHandler {
                                     header.position(),
                                     header.offset(),
                                     header.type(),
-                                    INCOMING_STREAM_ID,
+                                    MatchEngine.OUTGOING_STREAM_ID,
                                     header.sessionId(),
                                     header.initialTermId(),
                                     header.termId(),
