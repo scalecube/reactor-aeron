@@ -16,7 +16,8 @@ import reactor.aeron.pure.archive.Utils;
 
 public class MatchEngineEventHandler {
 
-  private static final String INCOMING_URI =
+  private static final String INCOMING_URI = MatchEngine.OUTGOING_URI;
+  private static final String REPLAY_URI =
       new ChannelUriStringBuilder()
           .controlEndpoint(MatchEngine.OUTGOING_ENDPOINT)
           .controlMode(CommonContext.MDC_CONTROL_MODE_DYNAMIC)
@@ -24,6 +25,7 @@ public class MatchEngineEventHandler {
           .media(CommonContext.UDP_MEDIA)
           .build();
   private static final int INCOMING_STREAM_ID = MatchEngine.OUTGOING_STREAM_ID;
+  private static final int REPLAY_STREAM_ID = MatchEngine.OUTGOING_REPLAY_STREAM_ID + 1;
   private static final int FRAGMENT_LIMIT = 10;
 
   /**
@@ -41,59 +43,67 @@ public class MatchEngineEventHandler {
             MediaDriver.launch(
                 new Context()
                     .threadingMode(ThreadingMode.SHARED)
-                    // .spiesSimulateConnection(false)
+                    .spiesSimulateConnection(true)
                     .errorHandler(Throwable::printStackTrace)
                     .aeronDirectoryName(aeronDirName)
                     .dirDeleteOnStart(true));
         AeronArchive aeronArchive =
             AeronArchive.connect(
                 new AeronArchive.Context()
-                    .controlResponseChannel("aeron:udp?endpoint=localhost:8022")
-                    .controlResponseStreamId(18022)
+                    .controlResponseChannel("aeron:udp?endpoint=localhost:8025")
+                    .controlResponseStreamId(18025)
                     .aeronDirectoryName(aeronDirName))) {
 
       long recordingId = findLatestRecording(aeronArchive, INCOMING_URI, INCOMING_STREAM_ID);
 
+      System.out.println("recordingId: " + recordingId);
+
       long position = aeronArchive.getRecordingPosition(recordingId);
       System.out.println("getRecordingPosition: " + position);
-      position = AeronArchive.NULL_POSITION;
+      //      position = AeronArchive.NULL_POSITION;
+      position = 0;
+
+      System.out.println("position: " + position);
 
       Subscription subscription =
-          aeronArchive.replay(
-              recordingId, position, Long.MAX_VALUE, INCOMING_URI, INCOMING_STREAM_ID);
+          aeronArchive.replay(recordingId, position, Long.MAX_VALUE, REPLAY_URI, REPLAY_STREAM_ID);
 
       YieldingIdleStrategy idleStrategy = new YieldingIdleStrategy();
 
-      while (running.get()) {
-        int works =
-            subscription.poll(
-                        (buffer, offset, length, header) -> {
-                          final byte[] data = new byte[length - Long.BYTES];
-                          buffer.getBytes(offset + Long.BYTES, data);
+      try {
+        while (running.get()) {
+          int works =
+              subscription.poll(
+                          (buffer, offset, length, header) -> {
+                            final byte[] data = new byte[length - Long.BYTES];
+                            buffer.getBytes(offset + Long.BYTES, data);
 
-                          System.out.println(
-                              String.format(
-                                  "msg{ externalOffset: %s offset: %s, length: %s, body: %s }, header{ pos: %s, offset: %s, type: %s }, channel { stream: %s, session: %s, initialTermId: %s, termId: %s, termOffset: %s, flags: %s }",
-                                  buffer.getLong(offset),
-                                  offset,
-                                  length,
-                                  new String(data),
-                                  header.position(),
-                                  header.offset(),
-                                  header.type(),
-                                  INCOMING_STREAM_ID,
-                                  header.sessionId(),
-                                  header.initialTermId(),
-                                  header.termId(),
-                                  header.termOffset(),
-                                  header.flags()));
-                        },
-                        FRAGMENT_LIMIT)
-                    > 0
-                ? 1
-                : 0;
+                            System.out.println(
+                                String.format(
+                                    "msg{ externalOffset: %s offset: %s, length: %s, body: %s }, header{ pos: %s, offset: %s, type: %s }, channel { stream: %s, session: %s, initialTermId: %s, termId: %s, termOffset: %s, flags: %s }",
+                                    buffer.getLong(offset),
+                                    offset,
+                                    length,
+                                    new String(data),
+                                    header.position(),
+                                    header.offset(),
+                                    header.type(),
+                                    INCOMING_STREAM_ID,
+                                    header.sessionId(),
+                                    header.initialTermId(),
+                                    header.termId(),
+                                    header.termOffset(),
+                                    header.flags()));
+                          },
+                          FRAGMENT_LIMIT)
+                      > 0
+                  ? 1
+                  : 0;
 
-        idleStrategy.idle(works);
+          idleStrategy.idle(works);
+        }
+      } finally {
+        aeronArchive.stopReplay(subscription.images().get(0).sessionId());
       }
 
       Thread.currentThread().join();

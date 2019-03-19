@@ -29,6 +29,7 @@ public class MatchEngine {
   static final int INCOMING_RECORDING_STREAM_ID = 2224;
   static final String OUTGOING_ENDPOINT = "localhost:8181";
   static final int OUTGOING_STREAM_ID = 2223;
+  static final int OUTGOING_REPLAY_STREAM_ID = 2225;
 
   private static final String INCOMING_URI =
       new ChannelUriStringBuilder()
@@ -43,7 +44,7 @@ public class MatchEngine {
           .reliable(Boolean.TRUE)
           .media(CommonContext.IPC_MEDIA)
           .build();
-  private static final String OUTGOING_URI =
+  static final String OUTGOING_URI =
       new ChannelUriStringBuilder()
           .controlEndpoint(OUTGOING_ENDPOINT)
           .controlMode(CommonContext.MDC_CONTROL_MODE_DYNAMIC)
@@ -90,7 +91,6 @@ public class MatchEngine {
 
       aeronArchive.startRecording(
           INCOMING_RECORDING_URI, INCOMING_RECORDING_STREAM_ID, SourceLocation.LOCAL);
-      aeronArchive.startRecording(OUTGOING_URI, OUTGOING_STREAM_ID, SourceLocation.LOCAL);
 
       Subscription incomingSubscription =
           aeron.addSubscription(
@@ -107,6 +107,7 @@ public class MatchEngine {
 
       ExclusivePublication outgoingPublication =
           aeron.addExclusivePublication(OUTGOING_URI, OUTGOING_STREAM_ID);
+      aeronArchive.startRecording(OUTGOING_URI, OUTGOING_STREAM_ID, SourceLocation.LOCAL);
 
       YieldingIdleStrategy idleStrategy = new YieldingIdleStrategy();
 
