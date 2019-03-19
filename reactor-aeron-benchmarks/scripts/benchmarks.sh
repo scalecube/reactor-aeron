@@ -1,11 +1,19 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-TESTS_DATA=$(cat benchmarks.json)
-cd ../..
+#This script executes benchmarks from benchmarks.json
 
+cd ../target
 
+JAR_FILE=$(ls |grep jar)
 
-JAR_FILE=$(ls target |grep jar)
+render_template() {
+eval "cat <<EOF
+$(<$1)
+EOF
+" 2> /dev/null
+}
+
+TESTS_DATA=$(render_template ../scripts/benchmarks.json)
 
 for test in $(echo "${TESTS_DATA}" | jq -r '.[] | @base64'); do
     _jq() {
@@ -24,4 +32,8 @@ for test in $(echo "${TESTS_DATA}" | jq -r '.[] | @base64'); do
 
     kill -9 $CLIENT_PID $SERVER_PID
 
+    echo "Finished $(_jq '.title')"
+
 done
+
+echo "All tests are passed"
