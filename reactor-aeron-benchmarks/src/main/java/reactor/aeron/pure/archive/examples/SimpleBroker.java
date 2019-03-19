@@ -12,9 +12,11 @@ import io.aeron.archive.client.RecordingDescriptorConsumer;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import java.time.Duration;
 import org.agrona.collections.MutableLong;
 import reactor.aeron.Configurations;
 import reactor.aeron.pure.archive.Utils;
+import reactor.core.publisher.Flux;
 
 public class SimpleBroker {
 
@@ -129,11 +131,69 @@ public class SimpleBroker {
                         + ", streamId: "
                         + replayStreamId);
               },
-              image -> {
-                Configurations.printUnavailableImage(image);
-              });
+              Configurations::printUnavailableImage);
 
-      Thread.currentThread().join();
+      Flux.interval(Duration.ofSeconds(5))
+          .doOnNext(
+              i -> {
+                System.out.println("------------------- listRecordings -------------------");
+
+                aeronArchive.listRecording(
+                    0,
+                    (controlSessionId,
+                        correlationId,
+                        recordingId,
+                        startTimestamp,
+                        stopTimestamp,
+                        startPosition,
+                        stopPosition,
+                        initialTermId,
+                        segmentFileLength,
+                        termBufferLength,
+                        mtuLength,
+                        sessionId,
+                        streamId,
+                        strippedChannel,
+                        originalChannel,
+                        sourceIdentity) -> {
+                      System.out.println(
+                          new StringBuilder()
+                              .append("controlSessionId: ")
+                              .append(controlSessionId)
+                              .append(", correlationId: ")
+                              .append(correlationId)
+                              .append(", recordingId: ")
+                              .append(recordingId)
+                              .append(", startTimestamp: ")
+                              .append(startTimestamp)
+                              .append(", stopTimestamp: ")
+                              .append(stopTimestamp)
+                              .append(", startPosition: ")
+                              .append(startPosition)
+                              .append(", stopPosition: ")
+                              .append(stopPosition)
+                              .append(", initialTermId: ")
+                              .append(initialTermId)
+                              .append(", segmentFileLength: ")
+                              .append(segmentFileLength)
+                              .append(", termBufferLength: ")
+                              .append(termBufferLength)
+                              .append(", mtuLength: ")
+                              .append(mtuLength)
+                              .append(", sessionId: ")
+                              .append(sessionId)
+                              .append(", streamId: ")
+                              .append(streamId)
+                              .append(", strippedChannel: ")
+                              .append(strippedChannel)
+                              .append(", originalChannel: ")
+                              .append(originalChannel)
+                              .append(", sourceIdentity: ")
+                              .append(sourceIdentity));
+                    });
+                System.out.println("------------------------------------------------------");
+              })
+          .blockLast();
     } finally {
       Utils.removeFile(archiveDirName);
       Utils.removeFile(aeronDirName);

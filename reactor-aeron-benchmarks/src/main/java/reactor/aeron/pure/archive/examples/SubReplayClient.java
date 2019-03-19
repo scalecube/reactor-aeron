@@ -25,7 +25,7 @@ public class SubReplayClient {
       SimpleBroker.BROKER_REPLAY_STREAM_ID
           + 1; // todo to start from specify position (not just listen to current messages)
   private static final long RECORDING_ID = 0L; // todo NOTICE change it if needed
-  private static final long POSITION = 91008; // todo NOTICE change it if needed
+  private static final long POSITION = 0L; // todo NOTICE change it if needed
 
   /**
    * Main runner.
