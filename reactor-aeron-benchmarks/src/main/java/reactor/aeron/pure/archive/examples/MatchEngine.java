@@ -4,6 +4,7 @@ import io.aeron.Aeron;
 import io.aeron.ChannelUriStringBuilder;
 import io.aeron.CommonContext;
 import io.aeron.ExclusivePublication;
+import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
@@ -16,6 +17,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.agrona.BufferUtil;
 import org.agrona.concurrent.SigInt;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.YieldingIdleStrategy;
 import reactor.aeron.Configurations;
 import reactor.aeron.pure.archive.Utils;
 
@@ -23,6 +25,8 @@ public class MatchEngine {
 
   static final String INCOMING_ENDPOINT = "localhost:7171";
   static final int INCOMING_STREAM_ID = 2222;
+  static final String INCOMING_RECORDING_ENDPOINT = "localhost:7172";
+  static final int INCOMING_RECORDING_STREAM_ID = 2224;
   static final String OUTGOING_ENDPOINT = "localhost:8181";
   static final int OUTGOING_STREAM_ID = 2223;
 
@@ -31,6 +35,13 @@ public class MatchEngine {
           .endpoint(INCOMING_ENDPOINT)
           .reliable(Boolean.TRUE)
           .media(CommonContext.UDP_MEDIA)
+          .build();
+  private static final String INCOMING_RECORDING_URI =
+      new ChannelUriStringBuilder()
+          .controlEndpoint(INCOMING_RECORDING_ENDPOINT)
+          .controlMode(CommonContext.MDC_CONTROL_MODE_DYNAMIC)
+          .reliable(Boolean.TRUE)
+          .media(CommonContext.IPC_MEDIA)
           .build();
   private static final String OUTGOING_URI =
       new ChannelUriStringBuilder()
@@ -60,7 +71,7 @@ public class MatchEngine {
             ArchivingMediaDriver.launch(
                 new MediaDriver.Context()
                     .threadingMode(ThreadingMode.SHARED)
-                     .spiesSimulateConnection(true)
+                    .spiesSimulateConnection(true)
                     .errorHandler(Throwable::printStackTrace)
                     .aeronDirectoryName(aeronDirName)
                     .dirDeleteOnStart(true),
@@ -77,50 +88,95 @@ public class MatchEngine {
 
       Aeron aeron = aeronArchive.context().aeron();
 
-
-
-      aeronArchive.listRecordings(INCOMING_URI, INCOMING_STREAM_ID)
-
-      aeronArchive.startRecording(INCOMING_URI, INCOMING_STREAM_ID, SourceLocation.LOCAL);
+      aeronArchive.startRecording(
+          INCOMING_RECORDING_URI, INCOMING_RECORDING_STREAM_ID, SourceLocation.LOCAL);
       aeronArchive.startRecording(OUTGOING_URI, OUTGOING_STREAM_ID, SourceLocation.LOCAL);
 
-      aeronArchive.stopRecording(1321); /// -> non-active
-
-
-      long l = aeronArchive.startReplay(1, 4545, OUTGOING_ENDPOINT);
-      long l = aeronArchive.startReplay(2, afs);
-
-      Subscription replay = aeronArchive.replay(4545);
-
-      Subscription subscription =
+      Subscription incomingSubscription =
           aeron.addSubscription(
               INCOMING_URI,
               INCOMING_STREAM_ID,
               Configurations::printAvailableImage,
               Configurations::printUnavailableImage);
 
-      ExclusivePublication publication =
+      ExclusivePublication recordingPublication =
+          aeron.addExclusivePublication(INCOMING_RECORDING_URI, INCOMING_RECORDING_STREAM_ID);
+
+      Subscription recordingSubscription =
+          aeron.addSubscription(INCOMING_RECORDING_URI, INCOMING_RECORDING_STREAM_ID);
+
+      ExclusivePublication outgoingPublication =
           aeron.addExclusivePublication(OUTGOING_URI, OUTGOING_STREAM_ID);
 
+      YieldingIdleStrategy idleStrategy = new YieldingIdleStrategy();
+
       while (running.get()) {
+        int works = 0;
 
-        subscription.poll(
-            (buffer, offset, length, header) -> {
+        works =
+            incomingSubscription.poll(
+                        (buffer, offset, length, header) -> {
+                          while (true) {
+                            long result = recordingPublication.offer(buffer, offset, length);
+                            if (result > 0) {
+                              break;
+                            }
+                            if (result == Publication.NOT_CONNECTED) {
+                              System.err.println(
+                                  "Offer failed because publisher is not connected to subscriber");
+                            } else if (result == Publication.CLOSED) {
+                              System.err.println("Offer failed publication is closed");
+                            } else if (result == Publication.MAX_POSITION_EXCEEDED) {
+                              System.err.println(
+                                  "Offer failed due to publication reaching max position");
+                            }
+                          }
+                        },
+                        FRAGMENT_LIMIT)
+                    > 0
+                ? 1
+                : 0;
 
-              // some business logic
+        works +=
+            recordingSubscription.poll(
+                        (buffer, offset, length, header) -> {
 
-              if (length + Long.BYTES > MESSAGE_SIZE) {
-                System.err.println("can't publish msg with its position");
-                return;
-              }
+                          // some business logic
 
-              BUFFER.putLong(0, header.position());
-              BUFFER.putBytes(Long.BYTES, buffer, offset, length);
-              publication.offer(BUFFER);
-            },
-            FRAGMENT_LIMIT);
+                          if (length + Long.BYTES > MESSAGE_SIZE) {
+                            System.err.println("can't publish msg with its position");
+                            return;
+                          }
 
-        Thread.sleep(100);
+                          final byte[] data = new byte[length];
+                          buffer.getBytes(offset, data);
+
+                          System.out.println(
+                              String.format(
+                                  "msg{ offset: %s, length: %s, body: %s }, header{ pos: %s, offset: %s, type: %s }, channel { stream: %s, session: %s, initialTermId: %s, termId: %s, termOffset: %s, flags: %s }",
+                                  offset,
+                                  length,
+                                  new String(data),
+                                  header.position(),
+                                  header.offset(),
+                                  header.type(),
+                                  INCOMING_STREAM_ID,
+                                  header.sessionId(),
+                                  header.initialTermId(),
+                                  header.termId(),
+                                  header.termOffset(),
+                                  header.flags()));
+
+                          BUFFER.putLong(0, header.position());
+                          BUFFER.putBytes(Long.BYTES, buffer, offset, length);
+                          outgoingPublication.offer(BUFFER, 0, length + Long.BYTES);
+                        },
+                        FRAGMENT_LIMIT)
+                    > 0
+                ? 1
+                : 0;
+
+        idleStrategy.idle(works);
       }
 
       Thread.currentThread().join();
