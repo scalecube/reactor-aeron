@@ -31,7 +31,7 @@ public class ReactorNettyServerTps {
 
     LoopResources loopResources = LoopResources.create("reactor-netty");
 
-    RateReporter reporter = new RateReporter("reactor-netty-" + Configurations.MESSAGE_LENGTH);
+    RateReporter reporter = new RateReporter();
 
     TcpServer.create()
         .runOn(loopResources)

@@ -14,8 +14,11 @@ public class LatencyReporter {
   private static final TraceReporter reporter = new TraceReporter();
 
   private final Recorder histogram;
+  private final String name;
 
-  private String name;
+  public LatencyReporter(Recorder histogram) {
+    this(histogram, Configurations.REPORT_NAME);
+  }
 
   public LatencyReporter(Recorder histogram, String name) {
     this.histogram = histogram;

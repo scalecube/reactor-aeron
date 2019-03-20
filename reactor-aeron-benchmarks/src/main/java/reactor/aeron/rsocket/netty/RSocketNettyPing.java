@@ -24,8 +24,7 @@ import reactor.netty.tcp.TcpClient;
 public final class RSocketNettyPing {
 
   private static final Recorder HISTOGRAM = new Recorder(TimeUnit.SECONDS.toNanos(10), 3);
-  private static final LatencyReporter latencyReporter =
-      new LatencyReporter(HISTOGRAM, "rsocket-netty-" + Configurations.name());
+  private static final LatencyReporter latencyReporter = new LatencyReporter(HISTOGRAM);
 
   private static final ByteBuf BUFFER =
       ByteBufAllocator.DEFAULT.buffer(Configurations.MESSAGE_LENGTH);

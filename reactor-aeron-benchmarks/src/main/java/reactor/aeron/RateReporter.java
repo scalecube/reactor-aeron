@@ -24,6 +24,10 @@ public class RateReporter implements Runnable, Disposable {
 
   private static final TraceReporter traceReporter = new TraceReporter();
 
+  public RateReporter() {
+    this(Configurations.REPORT_NAME);
+  }
+
   public RateReporter(String name) {
     this(Configurations.TARGET_FOLDER_FOLDER_THROUGHPUT, name);
   }

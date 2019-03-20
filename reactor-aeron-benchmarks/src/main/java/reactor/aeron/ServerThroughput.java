@@ -21,7 +21,7 @@ public class ServerThroughput {
             .start()
             .block();
 
-    RateReporter reporter = new RateReporter("reactor-aeron-" + Configurations.MESSAGE_LENGTH);
+    RateReporter reporter = new RateReporter();
 
     AeronServer.create(aeronResources)
         .options(

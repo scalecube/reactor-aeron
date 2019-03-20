@@ -20,8 +20,7 @@ import reactor.core.publisher.Flux;
 public final class RSocketAeronPing {
 
   private static final Recorder HISTOGRAM = new Recorder(TimeUnit.SECONDS.toNanos(10), 3);
-  private static final LatencyReporter latencyReporter =
-      new LatencyReporter(HISTOGRAM, "rsocket-aeron-" + Configurations.name());
+  private static final LatencyReporter latencyReporter = new LatencyReporter(HISTOGRAM);
 
   private static final Payload PAYLOAD =
       ByteBufPayload.create(ByteBufAllocator.DEFAULT.buffer(Configurations.MESSAGE_LENGTH));

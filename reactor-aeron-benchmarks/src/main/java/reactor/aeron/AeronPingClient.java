@@ -16,8 +16,7 @@ import reactor.core.publisher.Mono;
 public final class AeronPingClient {
 
   private static final Recorder HISTOGRAM = new Recorder(TimeUnit.SECONDS.toNanos(10), 3);
-  private static final LatencyReporter reporter =
-      new LatencyReporter(HISTOGRAM, "reactor-aeron-" + Configurations.name());
+  private static final LatencyReporter reporter = new LatencyReporter(HISTOGRAM);
 
   /**
    * Main runner.
