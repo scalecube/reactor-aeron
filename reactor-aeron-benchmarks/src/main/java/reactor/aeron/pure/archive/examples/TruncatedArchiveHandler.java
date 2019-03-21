@@ -13,6 +13,7 @@ import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.SigInt;
 import org.agrona.concurrent.YieldingIdleStrategy;
 import reactor.aeron.pure.archive.Utils;
+import reactor.aeron.pure.archive.Utils.RecordingDescriptor;
 
 public class TruncatedArchiveHandler {
 
@@ -58,23 +59,23 @@ public class TruncatedArchiveHandler {
                     .controlResponseStreamId(18028)
                     .aeronDirectoryName(aeronDirName))) {
 
-      long recordingId =
-          findLatestRecording(
-              aeronArchive, TruncatedArchive.OUTGOING_URI, TruncatedArchive.OUTGOING_STREAM_ID);
-
-      recordingId = 0;
-
-      System.out.println("recordingId: " + recordingId);
-
-      long position = aeronArchive.getRecordingPosition(recordingId);
-      System.out.println("getRecordingPosition: " + position);
-      //      position = AeronArchive.NULL_POSITION;
-      position = 0;
-
-      System.out.println("position: " + position);
+      RecordingDescriptor recording =
+          Utils.findRecording(
+                  aeronArchive,
+                  TruncatedArchive.OUTGOING_URI,
+                  TruncatedArchive.OUTGOING_STREAM_ID,
+                  0,
+                  100)
+              .log("found recordings ")
+              .blockLast();
 
       Subscription subscription =
-          aeronArchive.replay(recordingId, position, Long.MAX_VALUE, REPLAY_URI, REPLAY_STREAM_ID);
+          aeronArchive.replay(
+              recording.recordingId,
+              recording.startPosition,
+              Long.MAX_VALUE,
+              REPLAY_URI,
+              REPLAY_STREAM_ID);
 
       YieldingIdleStrategy idleStrategy = new YieldingIdleStrategy();
 

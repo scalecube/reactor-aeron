@@ -5,7 +5,7 @@ import io.aeron.archive.client.RecordingDescriptorConsumer;
 import java.io.File;
 import java.util.UUID;
 import org.agrona.IoUtil;
-import org.agrona.collections.MutableLong;
+import reactor.core.publisher.Flux;
 
 public class Utils {
 
@@ -36,48 +36,157 @@ public class Utils {
     IoUtil.delete(new File(value), true);
   }
 
-
   /**
-   * Returns the latest recordingId and throw an exception otherwise.
+   * Returns the list of {@link RecordingDescriptor}.
    *
    * @param aeronArchive archive client
    * @param channel target channel
    * @param channelStreamId target channel stream id
-   * @return the latest recordingId and throw an exception otherwise.
    */
-  public static long findLatestRecording(
-      final AeronArchive aeronArchive, String channel, int channelStreamId) {
-    final MutableLong lastRecordingId = new MutableLong();
+  public static Flux<RecordingDescriptor> findRecording(
+      final AeronArchive aeronArchive,
+      String channel,
+      int channelStreamId,
+      int fromRecordingId,
+      int count) {
 
-    final RecordingDescriptorConsumer consumer =
-        (controlSessionId,
-            correlationId,
-            recordingId,
-            startTimestamp,
-            stopTimestamp,
-            startPosition,
-            stopPosition,
-            initialTermId,
-            segmentFileLength,
-            termBufferLength,
-            mtuLength,
-            sessionId,
-            streamId,
-            strippedChannel,
-            originalChannel,
-            sourceIdentity) -> lastRecordingId.set(recordingId);
+    return Flux.create(
+        sink -> {
+          final RecordingDescriptorConsumer consumer =
+              (controlSessionId,
+                  correlationId,
+                  recordingId,
+                  startTimestamp,
+                  stopTimestamp,
+                  startPosition,
+                  stopPosition,
+                  initialTermId,
+                  segmentFileLength,
+                  termBufferLength,
+                  mtuLength,
+                  sessionId,
+                  streamId,
+                  strippedChannel,
+                  originalChannel,
+                  sourceIdentity) ->
+                  sink.next(
+                      new RecordingDescriptor(
+                          controlSessionId,
+                          correlationId,
+                          recordingId,
+                          startTimestamp,
+                          stopTimestamp,
+                          startPosition,
+                          stopPosition,
+                          initialTermId,
+                          segmentFileLength,
+                          termBufferLength,
+                          mtuLength,
+                          sessionId,
+                          streamId,
+                          strippedChannel,
+                          originalChannel,
+                          sourceIdentity));
 
-    final long fromRecordingId = 0L;
-    final int recordCount = 100;
+          aeronArchive.listRecordingsForUri(
+              fromRecordingId, count, channel, channelStreamId, consumer);
 
-    final int foundCount =
-        aeronArchive.listRecordingsForUri(
-            fromRecordingId, recordCount, channel, channelStreamId, consumer);
+          sink.complete();
+        });
+  }
 
-    if (foundCount == 0) {
-      throw new IllegalStateException("no recordings found");
+  public static class RecordingDescriptor {
+    public final long controlSessionId;
+    public final long correlationId;
+    public final long recordingId;
+    public final long startTimestamp;
+    public final long stopTimestamp;
+    public final long startPosition;
+    public final long stopPosition;
+    public final int initialTermId;
+    public final int segmentFileLength;
+    public final int termBufferLength;
+    public final int mtuLength;
+    public final int sessionId;
+    public final int streamId;
+    public final String strippedChannel;
+    public final String originalChannel;
+    public final String sourceIdentity;
+
+    public RecordingDescriptor(
+        long controlSessionId,
+        long correlationId,
+        long recordingId,
+        long startTimestamp,
+        long stopTimestamp,
+        long startPosition,
+        long stopPosition,
+        int initialTermId,
+        int segmentFileLength,
+        int termBufferLength,
+        int mtuLength,
+        int sessionId,
+        int streamId,
+        String strippedChannel,
+        String originalChannel,
+        String sourceIdentity) {
+      this.controlSessionId = controlSessionId;
+      this.correlationId = correlationId;
+      this.recordingId = recordingId;
+      this.startTimestamp = startTimestamp;
+      this.stopTimestamp = stopTimestamp;
+      this.startPosition = startPosition;
+      this.stopPosition = stopPosition;
+      this.initialTermId = initialTermId;
+      this.segmentFileLength = segmentFileLength;
+      this.termBufferLength = termBufferLength;
+      this.mtuLength = mtuLength;
+      this.sessionId = sessionId;
+      this.streamId = streamId;
+      this.strippedChannel = strippedChannel;
+      this.originalChannel = originalChannel;
+      this.sourceIdentity = sourceIdentity;
     }
 
-    return lastRecordingId.get();
+    @Override
+    public String toString() {
+      return "RecordingDescriptor{"
+          + "controlSessionId="
+          + controlSessionId
+          + ", correlationId="
+          + correlationId
+          + ", recordingId="
+          + recordingId
+          + ", startTimestamp="
+          + startTimestamp
+          + ", stopTimestamp="
+          + stopTimestamp
+          + ", startPosition="
+          + startPosition
+          + ", stopPosition="
+          + stopPosition
+          + ", initialTermId="
+          + initialTermId
+          + ", segmentFileLength="
+          + segmentFileLength
+          + ", termBufferLength="
+          + termBufferLength
+          + ", mtuLength="
+          + mtuLength
+          + ", sessionId="
+          + sessionId
+          + ", streamId="
+          + streamId
+          + ", strippedChannel='"
+          + strippedChannel
+          + '\''
+          + ", originalChannel='"
+          + originalChannel
+          + '\''
+          + ", sourceIdentity='"
+          + sourceIdentity
+          + '\''
+          + '}';
+    }
   }
 }

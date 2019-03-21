@@ -1,12 +1,10 @@
 package reactor.aeron.pure.archive.examples;
 
 import io.aeron.Aeron;
-import io.aeron.ChannelUri;
 import io.aeron.ChannelUriStringBuilder;
 import io.aeron.CommonContext;
 import io.aeron.ExclusivePublication;
 import io.aeron.Publication;
-import io.aeron.Subscription;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.archive.ArchivingMediaDriver;
@@ -15,12 +13,8 @@ import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import java.time.Duration;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.agrona.BufferUtil;
-import org.agrona.concurrent.SigInt;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.YieldingIdleStrategy;
-import reactor.aeron.Configurations;
 import reactor.aeron.pure.archive.Utils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -75,7 +69,11 @@ public class TruncatedArchive {
           aeron.addExclusivePublication(OUTGOING_URI, OUTGOING_STREAM_ID);
       aeronArchive.startRecording(OUTGOING_URI, OUTGOING_STREAM_ID, SourceLocation.LOCAL);
 
-      long recordingId = Utils.findLatestRecording(aeronArchive, OUTGOING_URI, OUTGOING_STREAM_ID);
+      long recordingId =
+          Utils.findRecording(aeronArchive, OUTGOING_URI, OUTGOING_STREAM_ID, 0, 100)
+              .log("found recordings ")
+              .blockLast()
+              .recordingId;
 
       Flux.interval(Duration.ofSeconds(1))
           .doOnNext(
@@ -92,23 +90,21 @@ public class TruncatedArchive {
               })
           .subscribe();
 
-      Mono.delay(Duration.ofSeconds(5))
+      Mono.delay(Duration.ofSeconds(10))
           .doOnSuccess(
               $ -> {
                 aeronArchive.stopRecording(OUTGOING_URI, OUTGOING_STREAM_ID);
 
                 long recordingPosition = aeronArchive.getRecordingPosition(recordingId);
                 long stopPosition = aeronArchive.getStopPosition(recordingId);
-//                long truncatedPosition = stopPosition / 2;
+                //                long truncatedPosition = stopPosition / 2;
                 long truncatedPosition = 64;
 
                 System.out.println("recordingPosition = " + recordingPosition);
                 System.out.println("stopPosition = " + stopPosition);
                 System.out.println("truncatedPosition = " + truncatedPosition);
 
-//                aeronArchive.truncateRecording(recordingId, truncatedPosition);
-
-//                ChannelUri.addSessionId(OUTGOING_URI, outgoingPublication.sessionId())
+                aeronArchive.truncateRecording(recordingId, truncatedPosition);
 
                 try {
                   Thread.sleep(2000);
@@ -116,10 +112,7 @@ public class TruncatedArchive {
                   e.printStackTrace();
                 }
 
-                aeronArchive.extendRecording(recordingId, OUTGOING_URI , OUTGOING_STREAM_ID, SourceLocation.LOCAL);
-
-
-//                aeronArchive.startRecording(OUTGOING_URI, OUTGOING_STREAM_ID, SourceLocation.LOCAL);
+                aeronArchive.startRecording(OUTGOING_URI, OUTGOING_STREAM_ID, SourceLocation.LOCAL);
               })
           .subscribe();
 
