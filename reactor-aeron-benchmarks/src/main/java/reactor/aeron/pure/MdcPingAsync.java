@@ -23,7 +23,6 @@ import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.console.ContinueBarrier;
 import reactor.aeron.Configurations;
-import reactor.aeron.LatencyReporter;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
