@@ -10,7 +10,13 @@ for test in $(echo "${TESTS_DATA}" | jq -r '.[] | @base64'); do
     }
 
     echo "Starting $(_jq '.title')"
-    export TEST_VAR=help
+
+    # Add JVM_OPTS to tests if they exist
+    export JVM_OPTS=$(_jq '.JVM_OPTS')
+    if [ "$JVM_OPTS" == null ]
+        unset JVM_OPTS      
+    fi    
+
     $(_jq '.server') > /dev/null 2>&1 &
     SERVER_PID=$! 
 
@@ -20,7 +26,7 @@ for test in $(echo "${TESTS_DATA}" | jq -r '.[] | @base64'); do
     echo $SERVER_PID
     echo $CLIENT_PID
 
-    sleep 200
+    sleep 2
 
     kill -9 -$(ps -o pgid= $SERVER_PID | grep -o [0-9]*)
     kill -9 -$(ps -o pgid= $CLIENT_PID | grep -o [0-9]*)
