@@ -1,52 +1,7 @@
 [
   {
-    "title":"Reactor Netty tps 1024",
-    "server":"java -cp ${JAR_FILE}:lib/* -XX:+UnlockDiagnosticVMOptions -XX:GuaranteedSafepointInterval=300000 -Dreactor.aeron.report.name=reactor-netty-1024 -Dreactor.aeron.sample.messageLength=1024 reactor.aeron.netty.ReactorNettyServerTps",
-    "client":"java -cp ${JAR_FILE}:lib/* -XX:+UnlockDiagnosticVMOptions -XX:GuaranteedSafepointInterval=300000 -Dreactor.aeron.report.name=reactor-netty-1024 -Dreactor.aeron.sample.messageLength=1024 reactor.aeron.netty.ReactorNettyClientTps"
-  },
-  {
-    "title":"Reactor Netty latency 1x1024",
-    "server":"java -cp ${JAR_FILE}:lib/* -XX:+UnlockDiagnosticVMOptions -XX:GuaranteedSafepointInterval=300000 -Dreactor.aeron.report.name=reactor-netty-1x1024 -Dreactor.aeron.sample.messageLength=1024 reactor.aeron.netty.ReactorNettyServerPong",
-    "client":"java -cp ${JAR_FILE}:lib/* -XX:+UnlockDiagnosticVMOptions -XX:GuaranteedSafepointInterval=300000 -Dreactor.aeron.report.name=reactor-netty-1x1024 -Dreactor.aeron.sample.messageLength=1024 reactor.aeron.netty.ReactorNettyClientPing"
-  }, 
-  {  
-    "title":"Reactor aeron latency 16x128",
-    "server": "java -cp ${JAR_FILE}:lib/* -XX:+UnlockDiagnosticVMOptions -XX:GuaranteedSafepointInterval=300000 -Dreactor.aeron.report.name=reactor-aeron-latency-16x128 -Dreactor.aeron.sample.messageLength=16 -Dreactor.aeron.sample.request=128 -Daeron.threading.mode=SHARED -Dagrona.disable.bounds.checks=true -Dreactor.aeron.sample.idle.strategy=yielding -Dreactor.aeron.sample.frameCountLimit=16384 -Daeron.mtu.length=16k reactor.aeron.AeronPongServer",
-    "client": "java -cp ${JAR_FILE}:lib/* -XX:+UnlockDiagnosticVMOptions -XX:GuaranteedSafepointInterval=300000 -Dreactor.aeron.report.name=reactor-aeron-latency-16x128 -Dreactor.aeron.sample.messageLength=16 -Dreactor.aeron.sample.request=128 -Daeron.threading.mode=SHARED -Dagrona.disable.bounds.checks=true -Dreactor.aeron.sample.idle.strategy=yielding -Dreactor.aeron.sample.frameCountLimit=16384 -Daeron.mtu.length=16k reactor.aeron.AeronPingClient"
-  },
-  {
-    "title":"Reactor aeron tps 2048",
-    "server": "java -cp ${JAR_FILE}:lib/* -XX:BiasedLockingStartupDelay=0 -Dreactor.aeron.report.name=reactor-aeron-2048 -Dreactor.aeron.sample.messageLength=2048 -Djava.net.preferIPv4Stack=true -Daeron.term.buffer.sparse.file=false -Daeron.threading.mode=SHARED -Dagrona.disable.bounds.checks=true -Dreactor.aeron.sample.idle.strategy=yielding -Dreactor.aeron.sample.frameCountLimit=16384 -Daeron.mtu.length=16k -Daeron.socket.so_sndbuf=2m -Daeron.socket.so_rcvbuf=2m -Daeron.rcv.initial.window.length=2m reactor.aeron.ServerThroughput",
-    "client": "java -cp ${JAR_FILE}:lib/* -XX:BiasedLockingStartupDelay=0 -Dreactor.aeron.report.name=reactor-aeron-2048 -Dreactor.aeron.sample.messageLength=2048 -Djava.net.preferIPv4Stack=true -Daeron.term.buffer.sparse.file=false -Daeron.threading.mode=SHARED -Dagrona.disable.bounds.checks=true -Dreactor.aeron.sample.idle.strategy=yielding -Dreactor.aeron.sample.frameCountLimit=16384 -Daeron.mtu.length=16k -Daeron.socket.so_sndbuf=2m -Daeron.socket.so_rcvbuf=2m -Daeron.rcv.initial.window.length=2m reactor.aeron.ClientThroughput"
-  },
-  {
-    "title": "Reactor Aeron tps 1024",
-    "server": "java -cp ${JAR_FILE}:lib/* -XX:BiasedLockingStartupDelay=0 -Dreactor.aeron.report.name=reactor-aeron-1024 -Dreactor.aeron.sample.messageLength=1024 -Djava.net.preferIPv4Stack=true -Daeron.term.buffer.sparse.file=false -Daeron.threading.mode=SHARED -Dagrona.disable.bounds.checks=true -Dreactor.aeron.sample.idle.strategy=yielding -Dreactor.aeron.sample.frameCountLimit=16384 -Daeron.mtu.length=16k reactor.aeron.ServerThroughput",
-    "client": "java -cp ${JAR_FILE}:lib/* -XX:BiasedLockingStartupDelay=0 -Dreactor.aeron.report.name=reactor-aeron-1024 -Dreactor.aeron.sample.messageLength=1024 -Djava.net.preferIPv4Stack=true -Daeron.term.buffer.sparse.file=false -Daeron.threading.mode=SHARED -Dagrona.disable.bounds.checks=true -Dreactor.aeron.sample.idle.strategy=yielding -Dreactor.aeron.sample.frameCountLimit=16384 -Daeron.mtu.length=16k reactor.aeron.ClientThroughput"
-  },
-  {
-    "title": "Rsocket Netty tps 1024",
-    "server": "java -cp ${JAR_FILE}:lib/* -XX:+UnlockDiagnosticVMOptions -XX:GuaranteedSafepointInterval=300000 -Dreactor.aeron.report.name=rsocket-netty-1024 -Dreactor.aeron.sample.messageLength=1024 reactor.aeron.rsocket.netty.RSocketNettyServerTps",
-    "client": "java -cp ${JAR_FILE}:lib/* -XX:+UnlockDiagnosticVMOptions -XX:GuaranteedSafepointInterval=300000 -Dreactor.aeron.report.name=rsocket-netty-1024 -Dreactor.aeron.sample.messageLength=1024 reactor.aeron.rsocket.netty.RSocketNettyClientTps"
-  },
-  {
-    "title": "Rsocket Netty latency 1024",
-    "server": "java -cp ${JAR_FILE}:lib/* -XX:+UnlockDiagnosticVMOptions -XX:GuaranteedSafepointInterval=300000 -Dreactor.aeron.report.name=rsocket-netty-1x1024 -Dreactor.aeron.sample.messageLength=1024 reactor.aeron.rsocket.netty.RSocketNettyPong",
-    "client": "java -cp ${JAR_FILE}:lib/* -XX:+UnlockDiagnosticVMOptions -XX:GuaranteedSafepointInterval=300000 -Dreactor.aeron.report.name=rsocket-netty-1x1024 -Dreactor.aeron.sample.messageLength=1024 reactor.aeron.rsocket.netty.RSocketNettyPing"
-  },
-  {
-    "title": "Rsocket Aeron tps 1024",
-    "server": "../netty/netty-pong.sh",
-    "client": "../netty/netty-ping.sh"
-  },
-  {
-    "title": "Rsocket Aeron tps 1024",
-    "server": "../netty/netty-pong.sh -Dreactor.aeron.report.name=rsocket-netty-1x512 -Dreactor.aeron.sample.messageLength=512",
-    "client": "../netty/netty-ping.sh -Dreactor.aeron.report.name=rsocket-netty-1x512 -Dreactor.aeron.sample.messageLength=512"
-  },
-  {
-    "title": "Rsocket Aeron latency 1024",
-    "server": "java -cp ${JAR_FILE}:lib/* -XX:+UnlockDiagnosticVMOptions -XX:GuaranteedSafepointInterval=300000 -Dreactor.aeron.report.name=rsocket-aeron-16x128 -Dreactor.aeron.sample.messageLength=16 -Dreactor.aeron.sample.request=128 -Daeron.threading.mode=SHARED -Dagrona.disable.bounds.checks=true -Dreactor.aeron.sample.idle.strategy=yielding -Dreactor.aeron.sample.frameCountLimit=16384 -Daeron.mtu.length=16k ${JVM_OPTS} reactor.aeron.rsocket.aeron.RSocketAeronPong",
-    "client": "java -cp ${JAR_FILE}:lib/* -XX:+UnlockDiagnosticVMOptions -XX:GuaranteedSafepointInterval=300000 -Dreactor.aeron.report.name=rsocket-aeron-16x128 -Dreactor.aeron.sample.messageLength=16 -Dreactor.aeron.sample.request=128 -Daeron.threading.mode=SHARED -Dagrona.disable.bounds.checks=true -Dreactor.aeron.sample.idle.strategy=yielding -Dreactor.aeron.sample.frameCountLimit=16384 -Daeron.mtu.length=16k ${JVM_OPTS} reactor.aeron.rsocket.aeron.RSocketAeronPing"
+    "title":"Reactor Netty",
+    "server":"netty/netty-pong.sh",
+    "client":"netty/netty-ping.sh"
   }
 ]

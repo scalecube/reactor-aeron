@@ -2,18 +2,7 @@
 
 #This script executes benchmarks from benchmarks.json
 
-cd ../target
-
-JAR_FILE=$(ls |grep jar)
-
-render_template() {
-eval "cat <<EOF
-$(<$1)
-EOF
-" 2> /dev/null
-}
-
-TESTS_DATA=$(render_template ../scripts/benchmarks.json)
+TESTS_DATA=$(cat benchmarks.json)
 
 for test in $(echo "${TESTS_DATA}" | jq -r '.[] | @base64'); do
     _jq() {
@@ -21,16 +10,20 @@ for test in $(echo "${TESTS_DATA}" | jq -r '.[] | @base64'); do
     }
 
     echo "Starting $(_jq '.title')"
-
-    $(_jq '.server')  > /dev/null 2>&1 &
+    export TEST_VAR=help
+    $(_jq '.server') > /dev/null 2>&1 &
     SERVER_PID=$! 
 
     $(_jq '.client') > /dev/null 2>&1 &
     CLIENT_PID=$!
 
-    sleep 150
+    echo $SERVER_PID
+    echo $CLIENT_PID
 
-    kill -9 $CLIENT_PID $SERVER_PID
+    sleep 200
+
+    kill -9 -$(ps -o pgid= $SERVER_PID | grep -o [0-9]*)
+    kill -9 -$(ps -o pgid= $CLIENT_PID | grep -o [0-9]*)
 
     echo "Finished $(_jq '.title')"
 
