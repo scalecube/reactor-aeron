@@ -29,11 +29,11 @@ public class RateReporter implements Runnable, Disposable {
   }
 
   public RateReporter(String name) {
-    this(Configurations.TARGET_FOLDER_FOLDER_THROUGHPUT, name);
+    this(name, Configurations.TARGET_FOLDER_FOLDER_THROUGHPUT);
   }
 
-  public RateReporter(String location, String name) {
-    this(RateReporter::printRate, location, name);
+  public RateReporter(String name, String location) {
+    this(RateReporter::printRate, name, location);
   }
 
   /**
@@ -41,7 +41,7 @@ public class RateReporter implements Runnable, Disposable {
    *
    * @param reporter reporter function
    */
-  private RateReporter(Reporter reporter, String location, String name) {
+  private RateReporter(Reporter reporter, String name, String location) {
     this.name = name;
     long reportDelayNs = Duration.ofSeconds(Configurations.WARMUP_REPORT_DELAY).toNanos();
     this.reportIntervalNs = Duration.ofSeconds(Configurations.REPORT_INTERVAL).toNanos();
