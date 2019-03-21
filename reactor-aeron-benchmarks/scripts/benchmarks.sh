@@ -14,6 +14,7 @@ for test in $(echo "${TESTS_DATA}" | jq -r '.[] | @base64'); do
     # Add JVM_OPTS to tests if they exist
     export JVM_OPTS=$(_jq '.JVM_OPTS')
     if [ "$JVM_OPTS" == null ]
+    then
         unset JVM_OPTS      
     fi    
 
