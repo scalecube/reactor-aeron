@@ -1,7 +1,52 @@
 [
   {
-    "title":"Reactor Netty",
+    "title":"Netty",
     "server":"netty/netty-pong.sh",
     "client":"netty/netty-ping.sh"
+  },
+  {
+    "title":"Netty tps",
+    "server":"netty/server.sh",
+    "client":"netty/client.sh"
+  },
+  {
+    "title":"Reactor",
+    "server":"reactor/aeron-pong.sh",
+    "client":"reactor/aeron-ping.sh"
+  },
+  {
+    "title":"Reactor tps",
+    "server":"reactor/aeron-server-tps.sh",
+    "client":"reactor/aeron-client-tps.sh"
+  },
+  {
+    "title":"Reactor simple tps",
+    "server":"reactor/aeron-server-simple-tps.sh",
+    "client":"reactor/aeron-client-simple-tps.sh"
+  },
+  {
+    "title":"Rsocket aeron",
+    "server":"rsocket/aeron/rsocket-aeron-pong.sh",
+    "client":"rsocket/aeron/rsocket-aeron-ping.sh"
+  },
+  {
+    "title":"Rsocket aeron tps",
+    "server":"rsocket/aeron/rsocket-aeron-server-tps.sh",
+    "client":"rsocket/aeron/rsocket-aeron-client-tps.sh"
+  },
+  {
+    "title":"Rsocket aeron simple tps",
+    "server":"rsocket/aeron/rsocket-aeron-simple-tps.sh",
+    "client":"rsocket/aeron/rsocket-aeron-client-simple-tps.sh"
+  },
+  {
+    "title":"Rsocket netty",
+    "server":"rsocket/netty/rsocket-netty-pong.sh",
+    "client":"rsocket/netty/rsocket-netty-ping.sh"
+  },
+  {
+    "title":"Rsocket netty tps",
+    "server":"rsocket/netty/rsocket-netty-server-tps.sh",
+    "client":"rsocket/netty/rsocket-netty-client-tps.sh"
   }
 ]
