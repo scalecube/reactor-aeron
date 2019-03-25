@@ -8,7 +8,6 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.MediaDriver.Context;
 import io.aeron.driver.ThreadingMode;
 import java.time.Duration;
-import java.util.concurrent.CopyOnWriteArrayList;
 import reactor.aeron.Configurations;
 import reactor.aeron.pure.archive.Utils;
 import reactor.core.publisher.Flux;
@@ -59,8 +58,6 @@ public class ReplayServer {
                     .controlResponseStreamId(CONTROL_RESPONSE_STREAM_ID)
                     .aeronDirectoryName(aeronDirName))) {
 
-      CopyOnWriteArrayList<Subscription> subscriptions = new CopyOnWriteArrayList<>();
-
       Flux.interval(Duration.ofSeconds(5))
           .flatMap(
               i ->
@@ -69,43 +66,45 @@ public class ReplayServer {
           .distinct(recordingDescriptor -> recordingDescriptor.recordingId)
           .log("fondRecording ")
           .subscribe(
-              recording -> {
-                Subscription subscription =
-                    aeronArchive.replay(
-                        recording.recordingId,
-                        recording.startPosition,
-                        Integer.MAX_VALUE,
-                        REPLAY_URI,
-                        REPLAY_STREAM_ID,
-                        Configurations::printAvailableImage,
-                        Configurations::printUnavailableImage);
+              recording ->
+                  aeronArchive.startReplay(
+                      recording.recordingId,
+                      recording.startPosition,
+                      Long.MAX_VALUE,
+                      REPLAY_URI,
+                      REPLAY_STREAM_ID));
 
-                subscriptions.add(subscription);
-              });
+      Subscription subscription =
+          aeronArchive
+              .context()
+              .aeron()
+              .addSubscription(
+                  REPLAY_URI,
+                  REPLAY_STREAM_ID,
+                  Configurations::printAvailableImage,
+                  Configurations::printUnavailableImage);
 
       Flux.interval(Duration.ofSeconds(1))
           .doOnNext(
               i ->
-                  subscriptions.forEach(
-                      subscription ->
-                          subscription.poll(
-                              (buffer, offset, length, header) -> {
-                                final byte[] data = new byte[length];
-                                buffer.getBytes(offset, data);
+                  subscription.poll(
+                      (buffer, offset, length, header) -> {
+                        final byte[] data = new byte[length];
+                        buffer.getBytes(offset, data);
 
-                                System.out.println(
-                                    String.format(
-                                        "Message from session %d (%d@%d) <<%s>>, header{ pos: %s, offset: %s, termOffset: %s, type: %s}",
-                                        header.sessionId(),
-                                        length,
-                                        offset,
-                                        new String(data),
-                                        header.position(),
-                                        header.offset(),
-                                        header.termOffset(),
-                                        header.type()));
-                              },
-                              FRAGMENT_LIMIT)))
+                        System.out.println(
+                            String.format(
+                                "Message from session %d (%d@%d) <<%s>>, header{ pos: %s, offset: %s, termOffset: %s, type: %s}",
+                                header.sessionId(),
+                                length,
+                                offset,
+                                new String(data),
+                                header.position(),
+                                header.offset(),
+                                header.termOffset(),
+                                header.type()));
+                      },
+                      FRAGMENT_LIMIT))
           .blockLast();
 
     } finally {
