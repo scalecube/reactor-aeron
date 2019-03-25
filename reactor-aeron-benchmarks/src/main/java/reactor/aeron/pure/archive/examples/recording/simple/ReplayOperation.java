@@ -12,7 +12,7 @@ import reactor.aeron.Configurations;
 import reactor.aeron.pure.archive.Utils;
 import reactor.core.publisher.Flux;
 
-public class ReplayServer {
+public class ReplayOperation {
 
   private static final String CONTROL_RESPONSE_CHANNEL_URI =
       new ChannelUriStringBuilder()
@@ -77,6 +77,9 @@ public class ReplayServer {
                       AeronArchive.NULL_LENGTH,
                       REPLAY_URI,
                       REPLAY_STREAM_ID));
+
+      System.out.println(
+          "Creating subscription to " + REPLAY_URI + ", stream id: " + REPLAY_STREAM_ID);
 
       Subscription subscription =
           aeronArchive

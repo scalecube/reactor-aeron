@@ -59,6 +59,12 @@ public class RecordingServer {
           .aeron()
           .addSubscription(INCOMING_RECORDING_URI, INCOMING_RECORDING_STREAM_ID);
 
+      System.out.println(
+          "Creating recording to "
+              + INCOMING_RECORDING_URI
+              + ", stream id: "
+              + INCOMING_RECORDING_STREAM_ID);
+
       aeronArchive.startRecording(
           INCOMING_RECORDING_URI, INCOMING_RECORDING_STREAM_ID, SourceLocation.REMOTE);
 

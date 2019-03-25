@@ -82,20 +82,23 @@ public class ExtendedOperation {
 
                 long stopPosition = aeronArchive.getStopPosition(recording.recordingId);
 
-                System.out.println("stopPosition: " + stopPosition);
+                String channel =
+                    EXTENDED_RECORDING_URI_BUILDER
+                        .initialPosition(
+                            stopPosition, recording.initialTermId, recording.termBufferLength)
+                        .build();
+
+                System.out.println(
+                    "Creating publication to "
+                        + channel
+                        + "stream id: "
+                        + EXTENDED_RECORDING_STREAM_ID);
 
                 ExclusivePublication publication =
                     aeronArchive
                         .context()
                         .aeron()
-                        .addExclusivePublication(
-                            EXTENDED_RECORDING_URI_BUILDER
-                                .initialPosition(
-                                    stopPosition,
-                                    recording.initialTermId,
-                                    recording.termBufferLength)
-                                .build(),
-                            EXTENDED_RECORDING_STREAM_ID);
+                        .addExclusivePublication(channel, EXTENDED_RECORDING_STREAM_ID);
 
                 Flux.interval(SENT_INTERVAL)
                     .map(i -> "extended msg " + i)

@@ -42,6 +42,9 @@ public class Sender {
             Aeron.connect(
                 new Aeron.Context().aeronDirectoryName(mediaDriver.aeronDirectoryName()))) {
 
+      System.out.println(
+          "Creating publication to " + OUTBOUND_CHANNEL_URI + ", stream id: " + OUTBOUND_STREAM_ID);
+
       Publication publication =
           aeron.addExclusivePublication(OUTBOUND_CHANNEL_URI, OUTBOUND_STREAM_ID);
 
