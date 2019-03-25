@@ -18,7 +18,7 @@ public class RecordingServer {
   static final String INCOMING_RECORDING_ENDPOINT = "localhost:7373";
   static final int INCOMING_RECORDING_STREAM_ID = 3333;
 
-  private static final String INCOMING_RECORDING_URI =
+  static final String INCOMING_RECORDING_URI =
       new ChannelUriStringBuilder()
           .endpoint(INCOMING_RECORDING_ENDPOINT)
           .reliable(Boolean.TRUE)

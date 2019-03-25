@@ -20,6 +20,7 @@ public class Sender {
           .media(CommonContext.UDP_MEDIA)
           .build();
   private static final int OUTBOUND_STREAM_ID = RecordingServer.INCOMING_RECORDING_STREAM_ID;
+  private static final Duration SENT_INTERVAL = Duration.ofMillis(10);
 
   /**
    * Main runner.
@@ -43,7 +44,7 @@ public class Sender {
       Publication publication =
           aeron.addExclusivePublication(OUTBOUND_CHANNEL_URI, OUTBOUND_STREAM_ID);
 
-      Flux.interval(Duration.ofSeconds(1))
+      Flux.interval(SENT_INTERVAL)
           .map(i -> "Hello World! " + i)
           .doOnNext(message -> Utils.send(publication, message))
           .blockLast();
