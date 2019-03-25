@@ -1,10 +1,13 @@
 package reactor.aeron.pure.archive;
 
+import io.aeron.Publication;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.RecordingDescriptorConsumer;
 import java.io.File;
 import java.util.UUID;
+import org.agrona.BufferUtil;
 import org.agrona.IoUtil;
+import org.agrona.concurrent.UnsafeBuffer;
 import reactor.core.publisher.Flux;
 
 public class Utils {
@@ -34,6 +37,16 @@ public class Utils {
    */
   public static void removeFile(String value) {
     IoUtil.delete(new File(value), true);
+  }
+
+  /** Sends the given body via the given publication */
+  public static void send(Publication publication, String body) {
+    byte[] messageBytes = body.getBytes();
+    UnsafeBuffer buffer =
+        new UnsafeBuffer(BufferUtil.allocateDirectAligned(messageBytes.length, 64));
+    buffer.putBytes(0, messageBytes);
+    long result = publication.offer(buffer);
+    System.out.println("Offered " + body + " --- " + checkResult(result));
   }
 
   /**
@@ -187,6 +200,24 @@ public class Utils {
           + sourceIdentity
           + '\''
           + '}';
+    }
+  }
+
+  private static String checkResult(long result) {
+    if (result > 0) {
+      return "Success!";
+    } else if (result == Publication.BACK_PRESSURED) {
+      return "Offer failed due to back pressure";
+    } else if (result == Publication.ADMIN_ACTION) {
+      return "Offer failed because of an administration action in the system";
+    } else if (result == Publication.NOT_CONNECTED) {
+      return "Offer failed because publisher is not connected to subscriber";
+    } else if (result == Publication.CLOSED) {
+      return "Offer failed publication is closed";
+    } else if (result == Publication.MAX_POSITION_EXCEEDED) {
+      return "Offer failed due to publication reaching max position";
+    } else {
+      return "Offer failed due to unknown result code: " + result;
     }
   }
 }
