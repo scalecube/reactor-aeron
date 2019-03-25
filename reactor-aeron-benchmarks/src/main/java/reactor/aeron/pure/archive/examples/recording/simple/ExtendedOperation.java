@@ -72,11 +72,7 @@ public class ExtendedOperation {
 
                 aeronArchive.extendRecording(
                     recording.recordingId,
-                    new ChannelUriStringBuilder()
-                        .endpoint("localhost:8486")
-                        .reliable(Boolean.TRUE)
-                        .media(CommonContext.UDP_MEDIA)
-                        .build(),
+                    EXTENDED_RECORDING_URI_BUILDER.build(),
                     EXTENDED_RECORDING_STREAM_ID,
                     SourceLocation.REMOTE);
 
