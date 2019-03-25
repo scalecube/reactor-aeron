@@ -20,7 +20,8 @@ public class Sender {
           .media(CommonContext.UDP_MEDIA)
           .build();
   private static final int OUTBOUND_STREAM_ID = RecordingServer.INCOMING_RECORDING_STREAM_ID;
-  private static final Duration SENT_INTERVAL = Duration.ofMillis(10);
+
+  private static final Duration SENT_INTERVAL = Duration.ofSeconds(1);
 
   /**
    * Main runner.
