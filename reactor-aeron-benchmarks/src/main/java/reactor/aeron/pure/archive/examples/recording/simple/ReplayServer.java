@@ -65,12 +65,16 @@ public class ReplayServer {
                       aeronArchive, TARGET_RECORDING_URI, TARGET_RECORDING_STREAM_ID, 0, 1000))
           .distinct(recordingDescriptor -> recordingDescriptor.recordingId)
           .log("fondRecording ")
+          // check if the recording is ready for recording (truncated case)
+          .filter(
+              recording ->
+                  recording.stopPosition == -1 || recording.startPosition < recording.stopPosition)
           .subscribe(
               recording ->
                   aeronArchive.startReplay(
                       recording.recordingId,
                       recording.startPosition,
-                      Long.MAX_VALUE,
+                      AeronArchive.NULL_LENGTH,
                       REPLAY_URI,
                       REPLAY_STREAM_ID));
 
