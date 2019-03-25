@@ -27,10 +27,11 @@ for test in $(echo "${TESTS_DATA}" | jq -r '.[] | @base64'); do
     echo $SERVER_PID
     echo $CLIENT_PID
 
-    sleep 2
+    sleep 10
 
-    kill -9 -$(ps -o pgid= $SERVER_PID | grep -o [0-9]*)
-    kill -9 -$(ps -o pgid= $CLIENT_PID | grep -o [0-9]*)
+    # kill test processes with their childs
+    pkill -TERM -P $SERVER_PID
+    pkill -TERM -P $CLIENT_PID
 
     echo "Finished $(_jq '.title')"
 
