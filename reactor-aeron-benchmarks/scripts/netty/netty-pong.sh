@@ -5,8 +5,6 @@ cd ../../
 
 JAR_FILE=$(ls target/reactor-aeron-benchmarks*.jar |grep jar)
 
-echo ${JAR_FILE}
-
 java \
     -cp ${JAR_FILE}:target/lib/* \
     -XX:+UnlockDiagnosticVMOptions \

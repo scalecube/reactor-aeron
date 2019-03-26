@@ -12,13 +12,15 @@ for test in $(echo "${TESTS_DATA}" | jq -r '.[] | @base64'); do
     echo "Starting $(_jq '.title')"
 
     # Add JVM_OPTS to tests if they exist
-    export JVM_OPTS=$(_jq '.JVM_OPTS')
-    if [ "$JVM_OPTS" == null ]
+    if [ ! "$(_jq '.JVM_OPTS')" == null ]
     then
-        unset JVM_OPTS      
-    fi    
-
-    $(_jq '.server') > /dev/null 2>&1 &
+        export JVM_OPTS=""
+        for row in $(_jq '.JVM_OPTS[]'); do
+            JVM_OPTS+=" $row"
+        done
+    fi
+        
+    $(_jq '.server') #> /dev/null 2>&1 &
     SERVER_PID=$! 
 
     $(_jq '.client') > /dev/null 2>&1 &
