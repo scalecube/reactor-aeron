@@ -10,16 +10,22 @@ for test in $(echo "${TESTS_DATA}" | jq -r '.[] | @base64'); do
     }
 
     echo "Starting $(_jq '.title')"
-
+	
+	if [ ! "$(_jq '.title')" == null ]
+	then
+		export JVM_OPTS="-Dreactor.aeron.report.name=$(_jq '.title')"
+	fi
+	
     # Add JVM_OPTS to tests if they exist
     if [ ! "$(_jq '.args')" == null ]
     then
-        export JVM_OPTS=""
         for row in $(_jq '.args[]'); do
             JVM_OPTS+=" -D$row"
         done
     fi
-        
+    
+    echo $JVM_OPTS
+    
     $(_jq '.server') > /dev/null 2>&1 &
     SERVER_PID=$! 
 
