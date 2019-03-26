@@ -1,6 +1,6 @@
 [
   {
-    "title":"Reactor-Netty-16x128",
+    "title":"Reactor-Netty-Latency-16x128",
     "server":"netty/netty-pong.sh",
     "client":"netty/netty-ping.sh",
     "args" : [
@@ -10,7 +10,7 @@
     ]
   },
   {
-    "title":"Reactor-Aeron-16x128",
+    "title":"Reactor-Aeron-Latency-16x128",
     "server":"reactor/aeron-pong.sh",
     "client":"reactor/aeron-ping.sh",
     "args" : [
@@ -19,8 +19,9 @@
     	"reactor.aeron.sample.messageLength=128"
     ]
   },
+  
   {
-    "title":"Rsocket aeron-16x128",
+    "title":"RSocket-Aeron-Latency-16x128",
     "server":"rsocket/aeron/rsocket-aeron-pong.sh",
     "client":"rsocket/aeron/rsocket-aeron-ping.sh",
     "args" : [
@@ -30,7 +31,7 @@
     ]
   },
   {
-    "title":"Rsocket netty-16x128",
+    "title":"RSocket-Netty-Latency-16x128",
     "server":"rsocket/netty/rsocket-netty-pong.sh",
     "client":"rsocket/netty/rsocket-netty-ping.sh",
     "args" : [
@@ -40,25 +41,6 @@
     ]
   },
   
-  
-  {
-    "title":"Rsocket aeron Throughput-128",
-    "server":"rsocket/aeron/rsocket-aeron-server-tps.sh",
-    "client":"rsocket/aeron/rsocket-aeron-client-tps.sh",
-    "args" : [
-    	"reactor.aeron.report.name=reactor-netty-128",
-    	"reactor.aeron.sample.messageLength=128"
-    ]
-  },
-  {
-    "title":"Rsocket aeron simple Throughput",
-    "server":"rsocket/aeron/rsocket-aeron-simple-tps.sh",
-    "client":"rsocket/aeron/rsocket-aeron-client-simple-tps.sh",
-    "args" : [
-    	"reactor.aeron.report.name=reactor-netty-128",
-    	"reactor.aeron.sample.messageLength=128"
-    ]
-  },
   {
     "title":"Reactor-Netty-Throughput-128",
     "server":"netty/server.sh",
@@ -70,15 +52,6 @@
   },
   {
     "title":"Reactor-Aeron-Throughput-128",
-    "server":"reactor/aeron-server-tps.sh",
-    "client":"reactor/aeron-client-tps.sh",
-    "args" : [
-    	"reactor.aeron.report.name=reactor-aeron-128",
-    	"reactor.aeron.sample.messageLength=128"
-    ]
-  },
-  {
-    "title":"Reactor simple-Throughput-128",
     "server":"reactor/aeron-server-simple-tps.sh",
     "client":"reactor/aeron-client-simple-tps.sh",
     "args" : [
@@ -86,8 +59,19 @@
     	"reactor.aeron.sample.messageLength=128"
     ]
   },
+  
+  
   {
-    "title":"Rsocket netty Throughput-128",
+    "title":"RSocket-Aeron-Throughput-128",
+    "server":"rsocket/aeron/rsocket-aeron-simple-tps.sh",
+    "client":"rsocket/aeron/rsocket-aeron-client-simple-tps.sh",
+    "args" : [
+    	"reactor.aeron.report.name=reactor-netty-128",
+    	"reactor.aeron.sample.messageLength=128"
+    ]
+  },
+  {
+    "title":"RSocket-Netty-Throughput-128",
     "server":"rsocket/netty/rsocket-netty-server-tps.sh",
     "client":"rsocket/netty/rsocket-netty-client-tps.sh",
     "args" : [
