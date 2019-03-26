@@ -20,7 +20,7 @@ for test in $(echo "${TESTS_DATA}" | jq -r '.[] | @base64'); do
         done
     fi
         
-    $(_jq '.server') #> /dev/null 2>&1 &
+    $(_jq '.server') > /dev/null 2>&1 &
     SERVER_PID=$! 
 
     $(_jq '.client') > /dev/null 2>&1 &
