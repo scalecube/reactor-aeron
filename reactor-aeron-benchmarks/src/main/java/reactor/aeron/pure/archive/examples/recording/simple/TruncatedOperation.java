@@ -64,8 +64,7 @@ public class TruncatedOperation {
                 aeronArchive.startRecording(
                     recording.originalChannel, recording.streamId, SourceLocation.REMOTE);
               })
-          .blockLast(Duration.ofSeconds(10));
-
+          .blockLast();
     } finally {
       Utils.removeFile(aeronDirName);
     }
