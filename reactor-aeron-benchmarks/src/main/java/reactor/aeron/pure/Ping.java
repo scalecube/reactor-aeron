@@ -21,8 +21,8 @@ import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.console.ContinueBarrier;
 import reactor.aeron.Configurations;
+import reactor.aeron.LatencyReporter;
 import reactor.core.Disposable;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
@@ -48,6 +48,7 @@ public class Ping {
   private static final UnsafeBuffer OFFER_BUFFER =
       new UnsafeBuffer(BufferUtil.allocateDirectAligned(MESSAGE_LENGTH, BitUtil.CACHE_LINE_LENGTH));
   private static final Recorder HISTOGRAM = new Recorder(TimeUnit.SECONDS.toNanos(10), 3);
+  private static final LatencyReporter latencyReporter = new LatencyReporter(HISTOGRAM);
   private static final CountDownLatch LATCH = new CountDownLatch(1);
   private static final IdleStrategy POLLING_IDLE_STRATEGY = Configurations.idleStrategy();
 
@@ -124,7 +125,7 @@ public class Ping {
 
     HISTOGRAM.reset();
 
-    Disposable reporter = startReport(warmup);
+    Disposable reporter = latencyReporter.start();
 
     final Image image = subscription.imageAtIndex(0);
 
@@ -164,23 +165,5 @@ public class Ping {
     if (PONG_STREAM_ID == subscription.streamId() && PONG_CHANNEL.equals(subscription.channel())) {
       LATCH.countDown();
     }
-  }
-
-  private static Disposable startReport(boolean warmup) {
-    if (warmup) {
-      return () -> {
-        // no-op
-      };
-    }
-    return Flux.interval(Duration.ofSeconds(Configurations.REPORT_INTERVAL))
-        .doOnNext(Ping::report)
-        .doFinally(Ping::report)
-        .subscribe();
-  }
-
-  private static void report(Object ignored) {
-    System.out.println("---- PING/PONG HISTO ----");
-    HISTOGRAM.getIntervalHistogram().outputPercentileDistribution(System.out, 5, 1000.0, false);
-    System.out.println("---- PING/PONG HISTO ----");
   }
 }
