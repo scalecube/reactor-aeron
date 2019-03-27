@@ -32,7 +32,7 @@ for test in $(echo "${TESTS_DATA}" | jq -r '.[] | @base64'); do
     $(_jq '.client') > /dev/null 2>&1 &
     CLIENT_PID=$!
 
-    sleep 150
+    sleep 75
 
     # kill test processes with their childs
     pkill -TERM -P $SERVER_PID

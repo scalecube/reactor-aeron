@@ -1,5 +1,15 @@
 [
   {
+    "title":"Pure-Aeron-Latency-16x128",
+    "server":"pure/mdc-pong.sh",
+    "client":"pure/mdc-ping-async.sh",
+    "args" : [
+    	"reactor.aeron.sample.request=16",
+    	"reactor.aeron.sample.messageLength=128"
+    ]
+  },
+  
+  {
     "title":"Reactor-Netty-Latency-16x128",
     "server":"netty/netty-pong.sh",
     "client":"netty/netty-ping.sh",
@@ -37,10 +47,19 @@
     ]
   },
   
+  
+  {
+    "title":"Pure-Aeron-Throughput-128",
+    "server":"pure/mdc-server-simple-tps.sh",
+    "client":"pure/mdc-client-simple-tps.sh",
+    "args" : [
+    	"reactor.aeron.sample.messageLength=128"
+    ]
+  },
   {
     "title":"Reactor-Netty-Throughput-128",
-    "server":"netty/server.sh",
-    "client":"netty/client.sh",
+    "server":"netty/netty-server-tps.sh",
+    "client":"netty/netty-client-tps.sh",
     "args" : [
     	"reactor.aeron.sample.messageLength=128"
     ]
@@ -53,11 +72,9 @@
     	"reactor.aeron.sample.messageLength=128"
     ]
   },
-  
-  
   {
     "title":"RSocket-Aeron-Throughput-128",
-    "server":"rsocket/aeron/rsocket-aeron-simple-tps.sh",
+    "server":"rsocket/aeron/rsocket-aeron-server-simple-tps.sh",
     "client":"rsocket/aeron/rsocket-aeron-client-simple-tps.sh",
     "args" : [
     	"reactor.aeron.sample.messageLength=128"
