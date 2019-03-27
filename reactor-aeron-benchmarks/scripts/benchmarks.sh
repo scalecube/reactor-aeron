@@ -38,7 +38,7 @@ for test in $(echo "${TESTS_DATA}" | jq -r '.[] | @base64'); do
     pkill -TERM -P $SERVER_PID
     pkill -TERM -P $CLIENT_PID
 
-    echo "Finished $(_jq '.title')"
+    echo Finished $(_jq '.title')
 
 done
 
