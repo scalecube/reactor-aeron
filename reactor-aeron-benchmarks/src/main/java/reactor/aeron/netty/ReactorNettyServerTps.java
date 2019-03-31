@@ -8,7 +8,6 @@ import io.netty.handler.codec.LengthFieldPrepender;
 import java.time.Duration;
 import reactor.aeron.Configurations;
 import reactor.aeron.RateReporter;
-import reactor.core.publisher.Mono;
 import reactor.netty.channel.BootstrapHandlers;
 import reactor.netty.resources.LoopResources;
 import reactor.netty.tcp.TcpServer;
@@ -36,44 +35,41 @@ public class ReactorNettyServerTps {
 
     RateReporter reporter = new RateReporter();
 
-    Mono<Void> x =
-        TcpServer.create()
-            .runOn(loopResources)
-            .host(Configurations.MDC_ADDRESS)
-            .port(Configurations.MDC_PORT)
-            .option(ChannelOption.TCP_NODELAY, true)
-            .option(ChannelOption.SO_KEEPALIVE, true)
-            .option(ChannelOption.SO_REUSEADDR, true)
-            .doOnConnection(System.out::println)
-            .bootstrap(
-                b ->
-                    BootstrapHandlers.updateConfiguration(
-                        b,
-                        "channel",
-                        (connectionObserver, channel) -> {
-                          setupChannel(channel);
-                        }))
-            .handle(
-                (inbound, outbound) ->
-                    inbound
-                        .receive()
-                        .retain()
-                        .doOnNext(
-                            buffer -> {
-                              reporter.onMessage(1, buffer.readableBytes());
-                              buffer.release();
-                            })
-                        .then())
-            .bind()
-            .doOnError(onError -> System.exit(0))
-            .doOnSuccess(
-                server ->
-                    System.out.println(
-                        "server has been started successfully on " + server.address()))
-            .block()
-            .onDispose(loopResources)
-            .onDispose(reporter)
-            .onDispose();
+    TcpServer.create()
+        .runOn(loopResources)
+        .host(Configurations.MDC_ADDRESS)
+        .port(Configurations.MDC_PORT)
+        .option(ChannelOption.TCP_NODELAY, true)
+        .option(ChannelOption.SO_KEEPALIVE, true)
+        .option(ChannelOption.SO_REUSEADDR, true)
+        .doOnConnection(System.out::println)
+        .bootstrap(
+            b ->
+                BootstrapHandlers.updateConfiguration(
+                    b,
+                    "channel",
+                    (connectionObserver, channel) -> {
+                      setupChannel(channel);
+                    }))
+        .handle(
+            (inbound, outbound) ->
+                inbound
+                    .receive()
+                    .retain()
+                    .doOnNext(
+                        buffer -> {
+                          reporter.onMessage(1, buffer.readableBytes());
+                          buffer.release();
+                        })
+                    .then())
+        .bind()
+        .doOnSuccess(
+            server ->
+                System.out.println("server has been started successfully on " + server.address()))
+        .block()
+        .onDispose(loopResources)
+        .onDispose(reporter)
+        .onDispose();
 
     Thread.sleep(Duration.ofSeconds(120).toMillis());
     System.exit(0);
