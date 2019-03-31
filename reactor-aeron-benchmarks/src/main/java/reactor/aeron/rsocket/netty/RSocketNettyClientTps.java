@@ -32,7 +32,7 @@ public final class RSocketNettyClientTps {
             + Configurations.MDC_PORT);
 
     RateReporter reporter = new RateReporter();
-    
+
     LoopResources loopResources = LoopResources.create("rsocket-netty");
 
     TcpClient tcpClient =
