@@ -6,7 +6,6 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 import reactor.aeron.Configurations;
 import reactor.aeron.RateReporter;
 import reactor.core.publisher.Mono;
@@ -20,7 +19,7 @@ public class ReactorNettyServerTps {
    * Main runner.
    *
    * @param args program arguments.
-   * @throws InterruptedException 
+   * @throws InterruptedException
    */
   public static void main(String[] args) throws InterruptedException {
     System.out.println(
@@ -37,43 +36,45 @@ public class ReactorNettyServerTps {
 
     RateReporter reporter = new RateReporter();
 
-    Mono<Void> x = TcpServer.create()
-        .runOn(loopResources)
-        .host(Configurations.MDC_ADDRESS)
-        .port(Configurations.MDC_PORT)
-        .option(ChannelOption.TCP_NODELAY, true)
-        .option(ChannelOption.SO_KEEPALIVE, true)
-        .option(ChannelOption.SO_REUSEADDR, true)
-        .doOnConnection(System.out::println)
-        .bootstrap(
-            b ->
-                BootstrapHandlers.updateConfiguration(
-                    b,
-                    "channel",
-                    (connectionObserver, channel) -> {
-                      setupChannel(channel);
-                    }))
-        .handle(
-            (inbound, outbound) ->
-                inbound
-                    .receive()
-                    .retain()
-                    .doOnNext(
-                        buffer -> {
-                          reporter.onMessage(1, buffer.readableBytes());
-                          buffer.release();
-                        })
-                    .then())
-        .bind()
-        .doOnError(onError->System.exit(0))
-        .doOnSuccess(
-            server ->
-                System.out.println("server has been started successfully on " + server.address()))
-        .block()
-        .onDispose(loopResources)
-        .onDispose(reporter)
-        .onDispose();
-    
+    Mono<Void> x =
+        TcpServer.create()
+            .runOn(loopResources)
+            .host(Configurations.MDC_ADDRESS)
+            .port(Configurations.MDC_PORT)
+            .option(ChannelOption.TCP_NODELAY, true)
+            .option(ChannelOption.SO_KEEPALIVE, true)
+            .option(ChannelOption.SO_REUSEADDR, true)
+            .doOnConnection(System.out::println)
+            .bootstrap(
+                b ->
+                    BootstrapHandlers.updateConfiguration(
+                        b,
+                        "channel",
+                        (connectionObserver, channel) -> {
+                          setupChannel(channel);
+                        }))
+            .handle(
+                (inbound, outbound) ->
+                    inbound
+                        .receive()
+                        .retain()
+                        .doOnNext(
+                            buffer -> {
+                              reporter.onMessage(1, buffer.readableBytes());
+                              buffer.release();
+                            })
+                        .then())
+            .bind()
+            .doOnError(onError -> System.exit(0))
+            .doOnSuccess(
+                server ->
+                    System.out.println(
+                        "server has been started successfully on " + server.address()))
+            .block()
+            .onDispose(loopResources)
+            .onDispose(reporter)
+            .onDispose();
+
     Thread.sleep(Duration.ofSeconds(120).toMillis());
     System.exit(0);
   }
