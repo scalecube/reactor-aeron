@@ -5,8 +5,11 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
+import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 import reactor.aeron.Configurations;
 import reactor.aeron.RateReporter;
+import reactor.core.publisher.Mono;
 import reactor.netty.channel.BootstrapHandlers;
 import reactor.netty.resources.LoopResources;
 import reactor.netty.tcp.TcpServer;
@@ -17,8 +20,9 @@ public class ReactorNettyServerTps {
    * Main runner.
    *
    * @param args program arguments.
+   * @throws InterruptedException 
    */
-  public static void main(String[] args) {
+  public static void main(String[] args) throws InterruptedException {
     System.out.println(
         "message size: "
             + Configurations.MESSAGE_LENGTH
@@ -33,7 +37,7 @@ public class ReactorNettyServerTps {
 
     RateReporter reporter = new RateReporter();
 
-    TcpServer.create()
+    Mono<Void> x = TcpServer.create()
         .runOn(loopResources)
         .host(Configurations.MDC_ADDRESS)
         .port(Configurations.MDC_PORT)
@@ -61,14 +65,17 @@ public class ReactorNettyServerTps {
                         })
                     .then())
         .bind()
+        .doOnError(onError->System.exit(0))
         .doOnSuccess(
             server ->
                 System.out.println("server has been started successfully on " + server.address()))
         .block()
         .onDispose(loopResources)
         .onDispose(reporter)
-        .onDispose()
-        .block();
+        .onDispose();
+    
+    Thread.sleep(Duration.ofSeconds(120).toMillis());
+    System.exit(0);
   }
 
   private static void setupChannel(Channel channel) {
