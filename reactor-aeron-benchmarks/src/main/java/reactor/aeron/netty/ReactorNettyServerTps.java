@@ -19,7 +19,7 @@ public class ReactorNettyServerTps {
    * Main runner.
    *
    * @param args program arguments.
-   * @throws InterruptedException
+   * @throws InterruptedException on timeout.
    */
   public static void main(String[] args) throws InterruptedException {
     System.out.println(
