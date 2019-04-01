@@ -31,6 +31,8 @@ public final class RSocketNettyClientTps {
             + ", port: "
             + Configurations.MDC_PORT);
 
+    RateReporter reporter = new RateReporter();
+
     LoopResources loopResources = LoopResources.create("rsocket-netty");
 
     TcpClient tcpClient =
@@ -50,8 +52,6 @@ public final class RSocketNettyClientTps {
             .start()
             .doOnSuccess(System.out::println)
             .block();
-
-    RateReporter reporter = new RateReporter();
 
     Payload request = ByteBufPayload.create("hello");
 

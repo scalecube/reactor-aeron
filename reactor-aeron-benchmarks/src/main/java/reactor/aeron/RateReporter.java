@@ -1,5 +1,6 @@
 package reactor.aeron;
 
+import io.scalecube.trace.TraceReporter;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
@@ -19,9 +20,20 @@ public class RateReporter implements Runnable, Disposable {
   private long lastTotalBytes;
   private long lastTotalMessages;
   private long lastTimestamp;
+  private String name;
+
+  private static final TraceReporter traceReporter = new TraceReporter();
 
   public RateReporter() {
-    this(RateReporter::printRate);
+    this(Configurations.REPORT_NAME);
+  }
+
+  public RateReporter(String name) {
+    this(name, Configurations.TARGET_FOLDER_FOLDER_THROUGHPUT);
+  }
+
+  public RateReporter(String name, String location) {
+    this(RateReporter::printRate, name, location);
   }
 
   /**
@@ -29,13 +41,19 @@ public class RateReporter implements Runnable, Disposable {
    *
    * @param reporter reporter function
    */
-  public RateReporter(Reporter reporter) {
+  private RateReporter(Reporter reporter, String name, String location) {
+    this.name = name;
     long reportDelayNs = Duration.ofSeconds(Configurations.WARMUP_REPORT_DELAY).toNanos();
     this.reportIntervalNs = Duration.ofSeconds(Configurations.REPORT_INTERVAL).toNanos();
     this.reporter = reporter;
     disposable =
         Schedulers.single()
             .schedulePeriodically(this, reportDelayNs, reportIntervalNs, TimeUnit.NANOSECONDS);
+
+    if (traceReporter.isActive()) {
+      traceReporter.scheduleDumpTo(
+          Duration.ofSeconds(Configurations.TRACE_REPORTER_INTERVAL), location);
+    }
   }
 
   @Override
@@ -51,6 +69,9 @@ public class RateReporter implements Runnable, Disposable {
     final double bytesPerSec =
         ((currentTotalBytes - lastTotalBytes) * (double) reportIntervalNs) / (double) timeSpanNs;
 
+    if (traceReporter.isActive()) {
+      traceReporter.addY(name, messagesPerSec);
+    }
     reporter.onReport(messagesPerSec, bytesPerSec, currentTotalMessages, currentTotalBytes);
 
     lastTotalBytes = currentTotalBytes;
@@ -84,6 +105,7 @@ public class RateReporter implements Runnable, Disposable {
       final double bytesPerSec,
       final long totalFragments,
       final long totalBytes) {
+
     System.out.format(
         "%.07g msgs/sec, %.07g MB/sec, totals %d messages %d MB payloads%n",
         messagesPerSec, bytesPerSec / (1024 * 1024), totalFragments, totalBytes / (1024 * 1024));

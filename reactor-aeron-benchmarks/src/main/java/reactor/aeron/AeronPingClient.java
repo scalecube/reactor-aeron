@@ -16,6 +16,7 @@ import reactor.core.publisher.Mono;
 public final class AeronPingClient {
 
   private static final Recorder HISTOGRAM = new Recorder(TimeUnit.SECONDS.toNanos(10), 3);
+  private static final LatencyReporter reporter = new LatencyReporter(HISTOGRAM);
 
   /**
    * Main runner.
@@ -75,7 +76,7 @@ public final class AeronPingClient {
   private static void roundTripMessages(AeronConnection connection, long count) {
     HISTOGRAM.reset();
 
-    Disposable reporter = startReport();
+    Disposable disp = reporter.start();
 
     NanoTimeGeneratorHandler handler = new NanoTimeGeneratorHandler();
 
@@ -97,27 +98,9 @@ public final class AeronPingClient {
             handler)
         .then(
             Mono.defer(
-                () ->
-                    Mono.delay(Duration.ofMillis(100))
-                        .doOnSubscribe(s -> reporter.dispose())
-                        .then()))
+                () -> Mono.delay(Duration.ofMillis(100)).doOnSubscribe(s -> disp.dispose()).then()))
         .then()
         .block();
-  }
-
-  private static Disposable startReport() {
-    return Flux.interval(
-            Duration.ofSeconds(Configurations.WARMUP_REPORT_DELAY),
-            Duration.ofSeconds(Configurations.REPORT_INTERVAL))
-        .doOnNext(AeronPingClient::report)
-        .doFinally(AeronPingClient::report)
-        .subscribe();
-  }
-
-  private static void report(Object ignored) {
-    System.out.println("---- PING/PONG HISTO ----");
-    HISTOGRAM.getIntervalHistogram().outputPercentileDistribution(System.out, 5, 1000.0, false);
-    System.out.println("---- PING/PONG HISTO ----");
   }
 
   private static class NanoTimeGeneratorHandler implements DirectBufferHandler<Object> {

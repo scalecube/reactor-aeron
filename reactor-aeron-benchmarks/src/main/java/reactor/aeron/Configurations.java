@@ -13,7 +13,9 @@ import org.agrona.concurrent.YieldingIdleStrategy;
 /** Configuration used for samples with defaults which can be overridden by system properties. */
 public interface Configurations {
   int FRAGMENT_COUNT_LIMIT = Integer.getInteger("reactor.aeron.sample.frameCountLimit", 10);
-  int MESSAGE_LENGTH = Integer.getInteger("reactor.aeron.sample.messageLength", 32);
+  int MESSAGE_LENGTH = Integer.getInteger("reactor.aeron.sample.messageLength", 128);
+  int REQUESTED = Integer.getInteger("reactor.aeron.sample.request", 16);
+  
   int WARMUP_NUMBER_OF_ITERATIONS = Integer.getInteger("reactor.aeron.sample.warmup.iterations", 5);
   long WARMUP_NUMBER_OF_MESSAGES = Long.getLong("reactor.aeron.sample.warmup.messages", 10_000);
   long NUMBER_OF_MESSAGES = Long.getLong("reactor.aeron.sample.messages", 100_000_000);
@@ -32,10 +34,19 @@ public interface Configurations {
   int MDC_CONTROL_PORT = Integer.getInteger("reactor.aeron.sample.mdc.control.port", 13001);
   int MDC_STREAM_ID = Integer.getInteger("reactor.aeron.sample.mdc.stream.id", 0xcafe0000);
   int MDC_SESSION_ID = Integer.getInteger("reactor.aeron.sample.mdc.session.id", 1001);
-  int REQUESTED = Integer.getInteger("reactor.aeron.sample.request", 8);
+  
   String IDLE_STRATEGY = System.getProperty("reactor.aeron.sample.idle.strategy", "busyspin");
   long REPORT_INTERVAL = Long.getLong("reactor.aeron.sample.report.interval", 1);
+  long TRACE_REPORTER_INTERVAL = Long.getLong("reactor.aeron.sample.report.interval", 60);
   long WARMUP_REPORT_DELAY = Long.getLong("reactor.aeron.sample.report.delay", REPORT_INTERVAL);
+  String TARGET_FOLDER_FOLDER_LATENCY =
+      System.getProperty(
+          "reactor.aeron.report.traces.folder.latency", "./target/traces/reports/latency/");
+  String TARGET_FOLDER_FOLDER_THROUGHPUT =
+      System.getProperty(
+          "reactor.aeron.report.traces.folder.throughput", "./target/traces/reports/throughput/");
+  String REPORT_NAME =
+      System.getProperty("reactor.aeron.report.name", String.valueOf(System.nanoTime()));
 
   /**
    * Returns idle strategy.

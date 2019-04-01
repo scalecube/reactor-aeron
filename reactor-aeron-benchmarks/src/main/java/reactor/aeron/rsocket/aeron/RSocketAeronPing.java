@@ -8,18 +8,20 @@ import io.rsocket.RSocket;
 import io.rsocket.RSocketFactory;
 import io.rsocket.reactor.aeron.AeronClientTransport;
 import io.rsocket.util.ByteBufPayload;
-import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.HdrHistogram.Recorder;
 import reactor.aeron.AeronClient;
 import reactor.aeron.AeronResources;
 import reactor.aeron.Configurations;
+import reactor.aeron.LatencyReporter;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 
 public final class RSocketAeronPing {
 
   private static final Recorder HISTOGRAM = new Recorder(TimeUnit.SECONDS.toNanos(10), 3);
+  private static final LatencyReporter latencyReporter = new LatencyReporter(HISTOGRAM);
+
   private static final Payload PAYLOAD =
       ByteBufPayload.create(ByteBufAllocator.DEFAULT.buffer(Configurations.MESSAGE_LENGTH));
 
@@ -54,7 +56,7 @@ public final class RSocketAeronPing {
             .start()
             .block();
 
-    Disposable report = startReport();
+    Disposable report = latencyReporter.start();
 
     Flux.range(1, (int) Configurations.NUMBER_OF_MESSAGES)
         .flatMap(
@@ -78,21 +80,6 @@ public final class RSocketAeronPing {
         .doFinally(s -> resources.dispose())
         .then(resources.onDispose())
         .block();
-  }
-
-  private static Disposable startReport() {
-    return Flux.interval(
-            Duration.ofSeconds(Configurations.WARMUP_REPORT_DELAY),
-            Duration.ofSeconds(Configurations.REPORT_INTERVAL))
-        .doOnNext(RSocketAeronPing::report)
-        .doFinally(RSocketAeronPing::report)
-        .subscribe();
-  }
-
-  private static void report(Object ignored) {
-    System.out.println("---- PING/PONG HISTO ----");
-    HISTOGRAM.getIntervalHistogram().outputPercentileDistribution(System.out, 5, 1000.0, false);
-    System.out.println("---- PING/PONG HISTO ----");
   }
 
   private static void printSettings() {

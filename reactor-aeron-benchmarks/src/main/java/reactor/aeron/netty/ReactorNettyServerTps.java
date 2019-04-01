@@ -17,8 +17,9 @@ public class ReactorNettyServerTps {
    * Main runner.
    *
    * @param args program arguments.
+   * @throws InterruptedException on timeout.
    */
-  public static void main(String[] args) {
+  public static void main(String[] args) throws InterruptedException {
     System.out.println(
         "message size: "
             + Configurations.MESSAGE_LENGTH
