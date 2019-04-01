@@ -5,7 +5,6 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
-import java.time.Duration;
 import reactor.aeron.Configurations;
 import reactor.aeron.RateReporter;
 import reactor.netty.channel.BootstrapHandlers;
@@ -69,10 +68,8 @@ public class ReactorNettyServerTps {
         .block()
         .onDispose(loopResources)
         .onDispose(reporter)
-        .onDispose();
-
-    Thread.sleep(Duration.ofSeconds(120).toMillis());
-    System.exit(0);
+        .onDispose()
+        .block();
   }
 
   private static void setupChannel(Channel channel) {
