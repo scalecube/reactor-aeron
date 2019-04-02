@@ -76,11 +76,11 @@ $ mvn clean install
 
 Performance is the key focus. Aeron is designed to be the highest throughput with the lowest and most predictable latency possible of any messaging system.
 
-Benchmark: `reactor-aeron` vs `reactor-netty` vs `pure-aeron` running on `AWS` `C5.xlarge`
+Benchmark: `reactor-aeron` vs `reactor-netty` vs `pure-aeron` vs `rsocket` running on `AWS` `C5.xlarge`
 
-- [Latency Aeron vs Reactor-Aeron vs Reactor-Netty (C5.xlarge)](http://scalecube.io/plotly/app/chart.html?url=https://api.jsonbin.io/b/5ca0ec3faedb757077ff67d8)
+- [Latency (C5.xlarge) - Aeron vs Reactor-Aeron vs Reactor-Netty vs RSocket-Aeron vs RSocket-netty](http://scalecube.io/plotly/app/chart.html?url=https://api.jsonbin.io/b/5ca0ec3faedb757077ff67d8)
 
-- [Throughput Aeron vs Reactor-Aeron vs Reactor-Netty (C5.xlarge)](http://scalecube.io/plotly/app/chart.html?url=https://api.jsonbin.io/b/5ca0ec4024f5074645e7e85e)
+- [Throughput (C5.xlarge) - Aeron vs Reactor-Aeron vs Reactor-Netty vs RSocket-Aeron vs RSocket-netty](http://scalecube.io/plotly/app/chart.html?url=https://api.jsonbin.io/b/5ca0ec4024f5074645e7e85e)
 
 ## Code style
 
