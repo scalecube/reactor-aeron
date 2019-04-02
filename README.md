@@ -78,8 +78,9 @@ Performance is the key focus. Aeron is designed to be the highest throughput wit
 
 Benchmark: `reactor-aeron` vs `reactor-netty` vs `pure-aeron` running on `AWS` `C5.xlarge`
 
-- Throughput: https://plot.ly/~ronenhamias/15.embed
-- Latency: https://plot.ly/~ronenhamias/17.embed
+- [Latency Aeron vs Reactor-Aeron vs Reactor-Netty (C5.xlarge)](http://scalecube.io/plotly/app/chart.html?url=https://api.jsonbin.io/b/5ca0ec3faedb757077ff67d8)
+
+- [Throughput Aeron vs Reactor-Aeron vs Reactor-Netty (C5.xlarge)](http://scalecube.io/plotly/app/chart.html?url=https://api.jsonbin.io/b/5ca0ec4024f5074645e7e85e)
 
 ## Code style
 
