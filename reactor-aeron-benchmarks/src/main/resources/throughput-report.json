@@ -1,0 +1,22 @@
+{
+  "layout": {
+    "title": "Throughput Aeron vs Reactor-Aeron vs Reactor-Netty  (C5.xlarge)",
+    "xaxis": {
+      "title": "data samples over time",
+      "titlefont": {
+        "family": "Courier New, monospace",
+        "size": 12,
+        "color": "#7f7f7f"
+      }
+    },
+    "yaxis" : {
+      "title": "Throughput per message size (bytes) / (messages per second)",
+      "titlefont": {
+        "family": "Courier New, monospace",
+        "size": 12,
+        "color": "#7f7f7f"
+      }
+    }
+  },
+  "traces": []
+}
