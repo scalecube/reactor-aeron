@@ -14,7 +14,6 @@ With `Maven` from `Maven Central` repositories (stable releases only):
     <groupId>io.scalecube</groupId>
     <artifactId>reactor-aeron</artifactId>
     <version>x.y.z</version>
-    <type>pom</type>
 </dependency>
 
 ```
