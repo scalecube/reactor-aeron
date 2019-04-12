@@ -2,10 +2,10 @@ package reactor.aeron.rsocket.aeron;
 
 import io.aeron.driver.Configuration;
 import io.netty.buffer.ByteBufAllocator;
-import io.rsocket.Frame;
 import io.rsocket.Payload;
 import io.rsocket.RSocket;
 import io.rsocket.RSocketFactory;
+import io.rsocket.frame.decoder.ZeroCopyPayloadDecoder;
 import io.rsocket.reactor.aeron.AeronClientTransport;
 import io.rsocket.util.ByteBufPayload;
 import java.util.concurrent.TimeUnit;
@@ -44,7 +44,7 @@ public final class RSocketAeronPing {
 
     RSocket client =
         RSocketFactory.connect()
-            .frameDecoder(Frame::retain)
+        .frameDecoder(new ZeroCopyPayloadDecoder())
             .transport(
                 () ->
                     new AeronClientTransport(

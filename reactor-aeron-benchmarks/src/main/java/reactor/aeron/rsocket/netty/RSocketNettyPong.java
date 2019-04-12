@@ -2,9 +2,9 @@ package reactor.aeron.rsocket.netty;
 
 import io.netty.channel.ChannelOption;
 import io.rsocket.AbstractRSocket;
-import io.rsocket.Frame;
 import io.rsocket.Payload;
 import io.rsocket.RSocketFactory;
+import io.rsocket.frame.decoder.ZeroCopyPayloadDecoder;
 import io.rsocket.transport.netty.server.TcpServerTransport;
 import reactor.aeron.Configurations;
 import reactor.core.publisher.Mono;
@@ -42,7 +42,7 @@ public final class RSocketNettyPong {
             .doOnConnection(System.out::println);
 
     RSocketFactory.receive()
-        .frameDecoder(Frame::retain)
+        .frameDecoder(new ZeroCopyPayloadDecoder())
         .acceptor(
             (setupPayload, rsocket) -> {
               System.out.println(rsocket);

@@ -1,7 +1,6 @@
 package reactor.aeron.rsocket.netty;
 
 import io.netty.channel.ChannelOption;
-import io.rsocket.Frame;
 import io.rsocket.Payload;
 import io.rsocket.RSocket;
 import io.rsocket.RSocketFactory;
@@ -47,7 +46,7 @@ public final class RSocketNettyClientTps {
 
     RSocket client =
         RSocketFactory.connect()
-            .frameDecoder(Frame::retain)
+            //.frameDecoder(Frame::retain)
             .transport(() -> TcpClientTransport.create(tcpClient))
             .start()
             .doOnSuccess(System.out::println)
