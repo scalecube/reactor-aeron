@@ -34,7 +34,7 @@ public final class RSocketAeronClientTps {
 
     RSocket client =
         RSocketFactory.connect()
-        .frameDecoder(new ZeroCopyPayloadDecoder())
+            .frameDecoder(new ZeroCopyPayloadDecoder())
             .transport(
                 () ->
                     new AeronClientTransport(

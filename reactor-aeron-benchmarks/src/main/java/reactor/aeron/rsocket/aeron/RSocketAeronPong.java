@@ -31,7 +31,7 @@ public final class RSocketAeronPong {
             .block();
 
     RSocketFactory.receive()
-    .frameDecoder(new ZeroCopyPayloadDecoder())
+        .frameDecoder(new ZeroCopyPayloadDecoder())
         .acceptor(
             (setupPayload, rsocket) ->
                 Mono.just(
