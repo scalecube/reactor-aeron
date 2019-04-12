@@ -66,7 +66,7 @@ public final class RSocketNettyPing {
 
     RSocket client =
         RSocketFactory.connect()
-        	.frameDecoder(new ZeroCopyPayloadDecoder())
+            .frameDecoder(new ZeroCopyPayloadDecoder())
             .transport(() -> TcpClientTransport.create(tcpClient))
             .start()
             .doOnSuccess(System.out::println)
