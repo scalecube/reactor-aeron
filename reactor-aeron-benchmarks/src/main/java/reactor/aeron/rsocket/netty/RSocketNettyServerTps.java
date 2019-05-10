@@ -6,6 +6,7 @@ import io.netty.channel.ChannelOption;
 import io.rsocket.AbstractRSocket;
 import io.rsocket.Payload;
 import io.rsocket.RSocketFactory;
+import io.rsocket.frame.decoder.PayloadDecoder;
 import io.rsocket.frame.decoder.ZeroCopyPayloadDecoder;
 import io.rsocket.transport.netty.server.TcpServerTransport;
 import io.rsocket.util.ByteBufPayload;
@@ -57,7 +58,7 @@ public final class RSocketNettyServerTps {
             .doOnConnection(System.out::println);
 
     RSocketFactory.receive()
-        .frameDecoder(new ZeroCopyPayloadDecoder())
+        .frameDecoder(PayloadDecoder.ZERO_COPY)
         .acceptor(
             (setupPayload, rsocket) -> {
               System.out.println(rsocket);

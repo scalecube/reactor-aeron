@@ -4,6 +4,7 @@ import io.aeron.driver.Configuration;
 import io.rsocket.AbstractRSocket;
 import io.rsocket.Payload;
 import io.rsocket.RSocketFactory;
+import io.rsocket.frame.decoder.PayloadDecoder;
 import io.rsocket.frame.decoder.ZeroCopyPayloadDecoder;
 import io.rsocket.reactor.aeron.AeronServerTransport;
 import reactor.aeron.AeronResources;
@@ -31,7 +32,7 @@ public final class RSocketAeronPong {
             .block();
 
     RSocketFactory.receive()
-        .frameDecoder(new ZeroCopyPayloadDecoder())
+        .frameDecoder(PayloadDecoder.ZERO_COPY)
         .acceptor(
             (setupPayload, rsocket) ->
                 Mono.just(

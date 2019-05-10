@@ -6,6 +6,7 @@ import io.netty.buffer.ByteBufAllocator;
 import io.rsocket.AbstractRSocket;
 import io.rsocket.Payload;
 import io.rsocket.RSocketFactory;
+import io.rsocket.frame.decoder.PayloadDecoder;
 import io.rsocket.frame.decoder.ZeroCopyPayloadDecoder;
 import io.rsocket.reactor.aeron.AeronServerTransport;
 import io.rsocket.util.ByteBufPayload;
@@ -47,7 +48,7 @@ public final class RSocketAeronServerTps {
             .block();
 
     RSocketFactory.receive()
-        .frameDecoder(new ZeroCopyPayloadDecoder())
+        .frameDecoder(PayloadDecoder.ZERO_COPY)
         .acceptor(
             (setupPayload, rsocket) ->
                 Mono.just(
