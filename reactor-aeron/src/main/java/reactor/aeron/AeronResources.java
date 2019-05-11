@@ -172,6 +172,7 @@ public final class AeronResources implements OnDisposable {
   private void copy(Aeron.Context ac) {
     aeronContext
         .resourceLingerDurationNs(ac.resourceLingerDurationNs())
+        .keepAliveIntervalNs(ac.keepAliveIntervalNs())
         .errorHandler(ac.errorHandler())
         .driverTimeoutMs(ac.driverTimeoutMs())
         .availableImageHandler(ac.availableImageHandler())

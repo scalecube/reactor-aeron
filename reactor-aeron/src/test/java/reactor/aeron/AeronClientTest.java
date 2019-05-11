@@ -70,7 +70,7 @@ class AeronClientTest extends BaseAeronTest {
 
   @Test
   public void testClientReceivesLongDataFromServer() {
-    char[] chars = new char[Configuration.MTU_LENGTH * 2];
+    char[] chars = new char[Configuration.mtuLength() * 2];
     Arrays.fill(chars, 'a');
     String str = new String(chars);
 
@@ -416,7 +416,7 @@ class AeronClientTest extends BaseAeronTest {
     int count = 100;
     Duration timeout = Duration.ofSeconds(2);
 
-    char[] chars = new char[Configuration.MTU_LENGTH * 15 / 10]; // 1.5 MTU
+    char[] chars = new char[Configuration.mtuLength() * 15 / 10]; // 1.5 MTU
     Arrays.fill(chars, 'a');
     String msg = new String(chars);
 
