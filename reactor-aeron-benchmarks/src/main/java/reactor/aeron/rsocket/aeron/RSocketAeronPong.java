@@ -1,6 +1,5 @@
 package reactor.aeron.rsocket.aeron;
 
-import io.aeron.driver.Configuration;
 import io.rsocket.AbstractRSocket;
 import io.rsocket.Payload;
 import io.rsocket.RSocketFactory;
@@ -64,7 +63,6 @@ public final class RSocketAeronPong {
             + Configurations.MDC_PORT
             + ", controlPort: "
             + Configurations.MDC_CONTROL_PORT);
-    System.out.println("MediaDriver THREADING_MODE: " + Configuration.THREADING_MODE_DEFAULT);
     System.out.println("pollFragmentLimit of " + Configurations.FRAGMENT_COUNT_LIMIT);
     System.out.println(
         "Using worker idle strategy "

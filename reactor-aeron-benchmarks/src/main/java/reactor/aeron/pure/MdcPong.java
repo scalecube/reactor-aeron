@@ -5,7 +5,6 @@ import io.aeron.ChannelUriStringBuilder;
 import io.aeron.FragmentAssembler;
 import io.aeron.Publication;
 import io.aeron.Subscription;
-import io.aeron.driver.Configuration;
 import io.aeron.driver.MediaDriver;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.agrona.CloseHelper;
@@ -69,7 +68,6 @@ public class MdcPong {
 
     final IdleStrategy idleStrategy = Configurations.idleStrategy();
 
-    System.out.println("MediaDriver THREADING_MODE: " + Configuration.THREADING_MODE_DEFAULT);
     System.out.println("Subscribing Ping at " + INBOUND_CHANNEL + " on stream Id " + STREAM_ID);
     System.out.println("Publishing Pong at " + OUTBOUND_CHANNEL + " on stream Id " + STREAM_ID);
     System.out.println("Using exclusive publications " + EXCLUSIVE_PUBLICATIONS);
