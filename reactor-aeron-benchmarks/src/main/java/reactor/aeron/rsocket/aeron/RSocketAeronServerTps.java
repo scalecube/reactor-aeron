@@ -1,12 +1,11 @@
 package reactor.aeron.rsocket.aeron;
 
-import io.aeron.driver.Configuration;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.rsocket.AbstractRSocket;
-import io.rsocket.Frame;
 import io.rsocket.Payload;
 import io.rsocket.RSocketFactory;
+import io.rsocket.frame.decoder.PayloadDecoder;
 import io.rsocket.reactor.aeron.AeronServerTransport;
 import io.rsocket.util.ByteBufPayload;
 import java.util.Random;
@@ -47,7 +46,7 @@ public final class RSocketAeronServerTps {
             .block();
 
     RSocketFactory.receive()
-        .frameDecoder(Frame::retain)
+        .frameDecoder(PayloadDecoder.ZERO_COPY)
         .acceptor(
             (setupPayload, rsocket) ->
                 Mono.just(
@@ -86,7 +85,6 @@ public final class RSocketAeronServerTps {
             + Configurations.MDC_PORT
             + ", controlPort: "
             + Configurations.MDC_CONTROL_PORT);
-    System.out.println("MediaDriver THREADING_MODE: " + Configuration.THREADING_MODE_DEFAULT);
     System.out.println("Message length of " + Configurations.MESSAGE_LENGTH + " bytes");
     System.out.println("pollFragmentLimit of " + Configurations.FRAGMENT_COUNT_LIMIT);
     System.out.println(

@@ -1,10 +1,9 @@
 package reactor.aeron.rsocket.aeron;
 
-import io.aeron.driver.Configuration;
-import io.rsocket.Frame;
 import io.rsocket.Payload;
 import io.rsocket.RSocket;
 import io.rsocket.RSocketFactory;
+import io.rsocket.frame.decoder.PayloadDecoder;
 import io.rsocket.reactor.aeron.AeronClientTransport;
 import io.rsocket.util.ByteBufPayload;
 import reactor.aeron.AeronClient;
@@ -34,7 +33,7 @@ public final class RSocketAeronClientTps {
 
     RSocket client =
         RSocketFactory.connect()
-            .frameDecoder(Frame::retain)
+            .frameDecoder(PayloadDecoder.ZERO_COPY)
             .transport(
                 () ->
                     new AeronClientTransport(
@@ -71,7 +70,6 @@ public final class RSocketAeronClientTps {
             + Configurations.MDC_PORT
             + ", controlPort: "
             + Configurations.MDC_CONTROL_PORT);
-    System.out.println("MediaDriver THREADING_MODE: " + Configuration.THREADING_MODE_DEFAULT);
     System.out.println("pollFragmentLimit of " + Configurations.FRAGMENT_COUNT_LIMIT);
     System.out.println(
         "Using worker idle strategy "

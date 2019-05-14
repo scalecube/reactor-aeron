@@ -7,7 +7,6 @@ import io.aeron.FragmentAssembler;
 import io.aeron.Image;
 import io.aeron.Publication;
 import io.aeron.Subscription;
-import io.aeron.driver.Configuration;
 import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
@@ -85,7 +84,6 @@ public class MdcPing {
       ctx.aeronDirectoryName(driver.aeronDirectoryName());
     }
 
-    System.out.println("MediaDriver THREADING_MODE: " + Configuration.THREADING_MODE_DEFAULT);
     System.out.println("Publishing Ping at " + OUTBOUND_CHANNEL + " on stream Id " + STREAM_ID);
     System.out.println("Subscribing Pong at " + INBOUND_CHANNEL + " on stream Id " + STREAM_ID);
     System.out.println("Message length of " + MESSAGE_LENGTH + " bytes");

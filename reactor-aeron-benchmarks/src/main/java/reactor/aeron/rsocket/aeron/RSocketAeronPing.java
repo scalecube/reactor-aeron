@@ -1,11 +1,10 @@
 package reactor.aeron.rsocket.aeron;
 
-import io.aeron.driver.Configuration;
 import io.netty.buffer.ByteBufAllocator;
-import io.rsocket.Frame;
 import io.rsocket.Payload;
 import io.rsocket.RSocket;
 import io.rsocket.RSocketFactory;
+import io.rsocket.frame.decoder.PayloadDecoder;
 import io.rsocket.reactor.aeron.AeronClientTransport;
 import io.rsocket.util.ByteBufPayload;
 import java.util.concurrent.TimeUnit;
@@ -44,7 +43,7 @@ public final class RSocketAeronPing {
 
     RSocket client =
         RSocketFactory.connect()
-            .frameDecoder(Frame::retain)
+            .frameDecoder(PayloadDecoder.ZERO_COPY)
             .transport(
                 () ->
                     new AeronClientTransport(
@@ -90,7 +89,6 @@ public final class RSocketAeronPing {
             + Configurations.MDC_PORT
             + ", controlPort: "
             + Configurations.MDC_CONTROL_PORT);
-    System.out.println("MediaDriver THREADING_MODE: " + Configuration.THREADING_MODE_DEFAULT);
     System.out.println("Message length of " + Configurations.MESSAGE_LENGTH + " bytes");
     System.out.println("pollFragmentLimit of " + Configurations.FRAGMENT_COUNT_LIMIT);
     System.out.println(

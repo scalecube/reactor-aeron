@@ -1,6 +1,5 @@
 package reactor.aeron;
 
-import io.aeron.driver.Configuration;
 import org.agrona.BitUtil;
 import org.agrona.BufferUtil;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -27,7 +26,6 @@ public class ClientThroughput {
             + Configurations.MDC_PORT
             + ", controlPort: "
             + Configurations.MDC_CONTROL_PORT);
-    System.out.println("MediaDriver THREADING_MODE: " + Configuration.THREADING_MODE_DEFAULT);
     System.out.println("Message length of " + Configurations.MESSAGE_LENGTH + " bytes");
     System.out.println("pollFragmentLimit of " + Configurations.FRAGMENT_COUNT_LIMIT);
     System.out.println(
