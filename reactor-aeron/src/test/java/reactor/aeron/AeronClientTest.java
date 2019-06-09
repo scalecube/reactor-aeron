@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import org.agrona.DirectBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -61,7 +62,8 @@ class AeronClientTest extends BaseAeronTest {
                 .then(connection.onDispose()));
 
     AeronConnection connection = createConnection();
-    StepVerifier.create(connection.inbound().receive().asString().log("client"))
+    StepVerifier.create(
+            DefaultFragmentMapper.asString(connection.inbound().receive()).log("client"))
         .expectNext("hello1", "2", "3")
         .expectNoEvent(Duration.ofMillis(10))
         .thenCancel()
@@ -83,7 +85,8 @@ class AeronClientTest extends BaseAeronTest {
 
     AeronConnection connection = createConnection();
 
-    StepVerifier.create(connection.inbound().receive().asString().log("client"))
+    StepVerifier.create(
+            DefaultFragmentMapper.asString(connection.inbound().receive()).log("client"))
         .expectNext(str, str, str)
         .expectNoEvent(Duration.ofMillis(10))
         .thenCancel()
@@ -102,13 +105,15 @@ class AeronClientTest extends BaseAeronTest {
     AeronConnection connection1 = createConnection();
     AeronConnection connection2 = createConnection();
 
-    StepVerifier.create(connection1.inbound().receive().asString().log("client-1"))
+    StepVerifier.create(
+            DefaultFragmentMapper.asString(connection1.inbound().receive()).log("client-1"))
         .expectNext("1", "2", "3")
         .expectNoEvent(Duration.ofMillis(100))
         .thenCancel()
         .verify();
 
-    StepVerifier.create(connection2.inbound().receive().asString().log("client-2"))
+    StepVerifier.create(
+            DefaultFragmentMapper.asString(connection2.inbound().receive()).log("client-2"))
         .expectNext("1", "2", "3")
         .expectNoEvent(Duration.ofMillis(100))
         .thenCancel()
@@ -125,7 +130,7 @@ class AeronClientTest extends BaseAeronTest {
 
     AeronConnection connection1 = createConnection();
 
-    StepVerifier.create(connection1.inbound().receive().asString())
+    StepVerifier.create(DefaultFragmentMapper.asString(connection1.inbound().receive()))
         .expectNextCount(count)
         .expectNoEvent(Duration.ofMillis(100))
         .thenCancel()
@@ -139,14 +144,14 @@ class AeronClientTest extends BaseAeronTest {
         connection ->
             connection
                 .outbound()
-                .send(connection.inbound().receive())
+                .send(connection.inbound().receive().cast(DirectBuffer.class))
                 .then(connection.onDispose()));
 
     AeronConnection connection1 = createConnection();
 
     connection1.outbound().sendString(Flux.range(0, count).map(String::valueOf)).then().subscribe();
 
-    StepVerifier.create(connection1.inbound().receive().asString())
+    StepVerifier.create(DefaultFragmentMapper.asString(connection1.inbound().receive()))
         .expectNextCount(count)
         .expectNoEvent(Duration.ofMillis(100))
         .thenCancel()
@@ -161,6 +166,7 @@ class AeronClientTest extends BaseAeronTest {
             connection
                 .inbound()
                 .receive()
+                .cast(DirectBuffer.class)
                 .flatMap(byteBuffer -> connection.outbound().send(Mono.just(byteBuffer)).then())
                 .then(connection.onDispose()));
 
@@ -176,7 +182,7 @@ class AeronClientTest extends BaseAeronTest {
         .then()
         .subscribe();
 
-    StepVerifier.create(connection1.inbound().receive().asString())
+    StepVerifier.create(DefaultFragmentMapper.asString(connection1.inbound().receive()))
         .expectNextCount(count)
         .expectNoEvent(Duration.ofMillis(100))
         .thenCancel()
@@ -191,6 +197,7 @@ class AeronClientTest extends BaseAeronTest {
             connection
                 .inbound()
                 .receive()
+                .cast(DirectBuffer.class)
                 .flatMap(byteBuffer -> connection.outbound().send(Mono.just(byteBuffer)).then())
                 .then(connection.onDispose()));
 
@@ -199,7 +206,7 @@ class AeronClientTest extends BaseAeronTest {
 
     createConnection(
         connection -> {
-          connection.inbound().receive().asString().subscribe(processor1);
+          DefaultFragmentMapper.asString(connection.inbound().receive()).subscribe(processor1);
           Flux.range(0, count)
               .flatMap(
                   i -> connection.outbound().sendString(Mono.just("client-1 send:" + i)).then())
@@ -210,7 +217,7 @@ class AeronClientTest extends BaseAeronTest {
 
     createConnection(
         connection -> {
-          connection.inbound().receive().asString().subscribe(processor2);
+          DefaultFragmentMapper.asString(connection.inbound().receive()).subscribe(processor2);
           Flux.range(0, count)
               .flatMap(
                   i -> connection.outbound().sendString(Mono.just("client-2 send:" + i)).then())
@@ -235,6 +242,7 @@ class AeronClientTest extends BaseAeronTest {
             connection
                 .inbound()
                 .receive()
+                .cast(DirectBuffer.class)
                 .flatMap(byteBuffer -> connection.outbound().send(Mono.just(byteBuffer)).then())
                 .then(connection.onDispose()));
 
@@ -254,16 +262,10 @@ class AeronClientTest extends BaseAeronTest {
             Mono.delay(Duration.ofMillis(100))
                 .thenMany(
                     Flux.merge(
-                        connection1
-                            .inbound()
-                            .receive()
-                            .asString()
+                        DefaultFragmentMapper.asString(connection1.inbound().receive())
                             .take(count)
                             .filter(response -> !response.startsWith("client-1 ")),
-                        connection2
-                            .inbound()
-                            .receive()
-                            .asString()
+                        DefaultFragmentMapper.asString(connection2.inbound().receive())
                             .take(count)
                             .filter(response -> !response.startsWith("client-2 ")))))
         .expectComplete()
@@ -284,13 +286,17 @@ class AeronClientTest extends BaseAeronTest {
 
     createConnection(
         connection -> {
-          connection.inbound().receive().asString().log("client-1").subscribe(processor1);
+          DefaultFragmentMapper.asString(connection.inbound().receive())
+              .log("client-1")
+              .subscribe(processor1);
           return connection.onDispose();
         });
 
     createConnection(
         connection -> {
-          connection.inbound().receive().asString().log("client-2").subscribe(processor2);
+          DefaultFragmentMapper.asString(connection.inbound().receive())
+              .log("client-2")
+              .subscribe(processor2);
           return connection.onDispose();
         });
 
@@ -317,10 +323,7 @@ class AeronClientTest extends BaseAeronTest {
 
     createServer(
         connection ->
-            connection
-                .inbound()
-                .receive()
-                .asString()
+            DefaultFragmentMapper.asString(connection.inbound().receive())
                 .doOnNext(clientRequests::onNext)
                 // .log("server receive ")
                 .then(connection.onDispose()));
@@ -394,10 +397,7 @@ class AeronClientTest extends BaseAeronTest {
     scheduler.schedule(() -> subscriber.request(request3), requestDelay3, TimeUnit.MILLISECONDS);
 
     DirectProcessor<String> processor = DirectProcessor.create();
-    connection1
-        .inbound()
-        .receive()
-        .asString()
+    DefaultFragmentMapper.asString(connection1.inbound().receive())
         .take(overall)
         .doOnNext(processor::onNext)
         .subscribe(subscriber);
@@ -457,10 +457,7 @@ class AeronClientTest extends BaseAeronTest {
     scheduler.schedule(() -> subscriber.request(request3), requestDelay3, TimeUnit.MILLISECONDS);
 
     DirectProcessor<String> processor = DirectProcessor.create();
-    connection1
-        .inbound()
-        .receive()
-        .asString()
+    DefaultFragmentMapper.asString(connection1.inbound().receive())
         .take(overall)
         .doOnNext(processor::onNext)
         .subscribe(subscriber);

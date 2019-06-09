@@ -50,4 +50,14 @@ final class AeronOutboundThen implements AeronOutbound {
   public Mono<Void> then() {
     return thenMono;
   }
+
+  @Override
+  public void dispose() {
+    source.dispose();
+  }
+
+  @Override
+  public boolean isDisposed() {
+    return source.isDisposed();
+  }
 }

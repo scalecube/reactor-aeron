@@ -1,6 +1,8 @@
 package reactor.aeron;
 
 import io.aeron.Aeron;
+import io.aeron.ChannelUri;
+import io.aeron.CommonContext;
 import io.aeron.ExclusivePublication;
 import io.aeron.Image;
 import io.aeron.Publication;
@@ -316,7 +318,7 @@ public final class AeronResources implements OnDisposable {
    *
    * @return {@code AeronEventLoop} instance
    */
-  AeronEventLoop nextEventLoop() {
+  public AeronEventLoop nextEventLoop() {
     return eventLoopGroup.next();
   }
 
@@ -325,45 +327,83 @@ public final class AeronResources implements OnDisposable {
    *
    * @return {@code AeronEventLoop} instance
    */
-  AeronEventLoop firstEventLoop() {
+  public AeronEventLoop firstEventLoop() {
     return eventLoopGroup.first();
   }
 
   /**
-   * Creates and registers {@link DefaultAeronInbound}.
+   * Returns subscription inbound which registered in event loop.
    *
-   * @param image aeron image
-   * @param subscription subscription
-   * @param eventLoop aeron event lopop
+   * @param channel subscription channel
+   * @param streamId subscription stream id
+   * @param mapper mapper
    * @return mono result
    */
-  Mono<DefaultAeronInbound> inbound(
-      Image image, MessageSubscription subscription, AeronEventLoop eventLoop) {
+  public <T> Mono<AeronInbound<T>> inbound(String channel, int streamId, FragmentMapper<T> mapper) {
+    return subscription(channel, streamId, null, null)
+        .map(
+            subscription -> {
+              AeronEventLoop eventLoop = nextEventLoop();
+              SubscriptionAgent<T> agent = new SubscriptionAgent<>(subscription, mapper, true);
+              eventLoop.register(agent);
+              return agent;
+            });
+  }
+
+  /**
+   * Returns image inbound which registered in event loop.
+   *
+   * @param channel image channel
+   * @param streamId image stream id
+   * @param mapper mapper
+   * @return mono result
+   */
+  public <T> Mono<AeronInbound<T>> imageInbound(
+      String channel, int streamId, FragmentMapper<T> mapper) {
     return Mono.defer(
         () -> {
-          DefaultAeronInbound inbound =
-              new DefaultAeronInbound(image, eventLoop, subscription, pollFragmentLimit);
-          return eventLoop
-              .register(inbound)
-              .doOnError(
-                  ex ->
-                      logger.error(
-                          "{} failed on registerInbound(), cause: {}", this, ex.toString()));
+          if (!ChannelUri.parse(channel).containsKey(CommonContext.SESSION_ID_PARAM_NAME)) {
+            throw new IllegalArgumentException("channel should be unique for image inbound");
+          }
+          MonoProcessor<Image> imageCallback = MonoProcessor.create();
+          return subscription(channel, streamId, imageCallback::onNext, null)
+              .flatMap(subscription -> imageCallback)
+              .map(
+                  image -> {
+                    AeronEventLoop eventLoop = nextEventLoop();
+                    ImageAgent<T> agent = new ImageAgent<>(image, mapper, true);
+                    eventLoop.register(agent);
+                    return agent;
+                  });
         });
   }
 
   /**
-   * Creates aeron {@link ExclusivePublication} then wraps it into {@link MessagePublication}.
-   * Result message publication will be assigned to event loop.
+   * Returns outbound which registered in event loop.
+   *
+   * @param channel target channel
+   * @param streamId target stream id
+   * @return mono result
+   */
+  public Mono<AeronOutbound> outbound(String channel, int streamId) {
+    return publication(channel, streamId)
+        .map(
+            publication -> {
+              AeronEventLoop eventLoop = nextEventLoop();
+              PublicationAgent agent = new PublicationAgent(publication);
+              eventLoop.register(agent);
+              return agent;
+            });
+  }
+
+  /**
+   * Creates aeron {@link ExclusivePublication}.
    *
    * @param channel aeron channel
    * @param streamId aeron stream id
-   * @param options aeorn options
-   * @param eventLoop aeron event loop
    * @return mono result
    */
-  Mono<MessagePublication> publication(
-      String channel, int streamId, AeronOptions options, AeronEventLoop eventLoop) {
+  Mono<Publication> publication(String channel, int streamId) {
     return Mono.defer(
         () ->
             aeronPublication(channel, streamId)
@@ -374,21 +414,7 @@ public final class AeronResources implements OnDisposable {
                             "{} failed on aeronPublication(), channel: {}, cause: {}",
                             this,
                             channel,
-                            ex.toString()))
-                .flatMap(
-                    aeronPublication ->
-                        eventLoop
-                            .register(new MessagePublication(aeronPublication, options, eventLoop))
-                            .doOnError(
-                                ex -> {
-                                  logger.error(
-                                      "{} failed on registerPublication(), cause: {}",
-                                      this,
-                                      ex.toString());
-                                  if (!aeronPublication.isClosed()) {
-                                    aeronPublication.close();
-                                  }
-                                })));
+                            ex.toString())));
   }
 
   private Mono<Publication> aeronPublication(String channel, int streamId) {
@@ -407,29 +433,20 @@ public final class AeronResources implements OnDisposable {
         });
   }
 
-  @Override
-  public void dispose() {
-    dispose.onComplete();
-  }
-
   /**
-   * Creates aeron {@link Subscription} then wraps it into {@link MessageSubscription}. Result
-   * message subscription will be assigned to event loop.
+   * Creates aeron {@link Subscription}.
    *
    * @param channel aeron channel
    * @param streamId aeron stream id
-   * @param eventLoop aeron event loop
    * @param onImageAvailable available image handler; optional
    * @param onImageUnavailable unavailable image handler; optional
    * @return mono result
    */
-  Mono<MessageSubscription> subscription(
+  Mono<Subscription> subscription(
       String channel,
       int streamId,
-      AeronEventLoop eventLoop,
       Consumer<Image> onImageAvailable,
       Consumer<Image> onImageUnavailable) {
-
     return Mono.defer(
         () ->
             aeronSubscription(channel, streamId, onImageAvailable, onImageUnavailable)
@@ -440,21 +457,12 @@ public final class AeronResources implements OnDisposable {
                             "{} failed on aeronSubscription(), channel: {}, cause: {}",
                             this,
                             channel,
-                            ex.toString()))
-                .flatMap(
-                    aeronSubscription ->
-                        eventLoop
-                            .register(new MessageSubscription(aeronSubscription, eventLoop))
-                            .doOnError(
-                                ex -> {
-                                  logger.error(
-                                      "{} failed on registerSubscription(), cause: {}",
-                                      this,
-                                      ex.toString());
-                                  if (!aeronSubscription.isClosed()) {
-                                    aeronSubscription.close();
-                                  }
-                                })));
+                            ex.toString())));
+  }
+
+  @Override
+  public void dispose() {
+    dispose.onComplete();
   }
 
   private Mono<Subscription> aeronSubscription(

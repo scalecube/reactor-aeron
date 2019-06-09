@@ -25,6 +25,7 @@ public class ClientServerSends {
                 connection
                     .inbound()
                     .receive()
+                    .cast(DirectBuffer.class)
                     .as(ByteBufFlux::create)
                     .asString()
                     .log("receive")

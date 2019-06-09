@@ -1,5 +1,7 @@
 package reactor.aeron;
 
+import org.agrona.DirectBuffer;
+
 public class ServerThroughput {
 
   /**
@@ -29,6 +31,7 @@ public class ServerThroughput {
                 connection
                     .inbound()
                     .receive()
+                    .cast(DirectBuffer.class)
                     .doOnNext(buffer -> reporter.onMessage(1, buffer.capacity()))
                     .then(connection.onDispose()))
         .bind()

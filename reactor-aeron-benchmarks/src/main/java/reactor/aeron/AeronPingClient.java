@@ -86,6 +86,7 @@ public final class AeronPingClient {
             connection
                 .inbound()
                 .receive()
+                .cast(DirectBuffer.class)
                 .take(count)
                 .doOnNext(
                     buffer -> {
@@ -108,17 +109,9 @@ public final class AeronPingClient {
                 Configurations.MESSAGE_LENGTH, BitUtil.CACHE_LINE_LENGTH));
 
     @Override
-    public int estimateLength(Object ignore) {
-      return Configurations.MESSAGE_LENGTH;
-    }
-
-    @Override
-    public DirectBuffer map(Object ignore, int length) {
+    public DirectBuffer map(Object ignore) {
       OFFER_BUFFER.putLong(0, System.nanoTime());
       return OFFER_BUFFER;
     }
-
-    @Override
-    public void dispose(Object ignore) {}
   }
 }

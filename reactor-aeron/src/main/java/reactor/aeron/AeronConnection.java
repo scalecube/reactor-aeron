@@ -21,7 +21,7 @@ public interface AeronConnection extends OnDisposable {
    *
    * @return {@code AeronInbound} instance
    */
-  AeronInbound inbound();
+  <T> AeronInbound<T> inbound();
 
   /**
    * Return the {@link AeronOutbound} write API from this connection. If {@link AeronConnection} has

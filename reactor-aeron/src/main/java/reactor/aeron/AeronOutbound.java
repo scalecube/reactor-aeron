@@ -1,12 +1,16 @@
 package reactor.aeron;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
+import reactor.core.Disposable;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-public interface AeronOutbound extends Publisher<Void> {
+public interface AeronOutbound extends Publisher<Void>, Disposable {
 
   /**
    * Send data to the peer, listen for any error on write and close on terminal signal
@@ -28,7 +32,9 @@ public interface AeronOutbound extends Publisher<Void> {
    * @return A new {@link AeronOutbound} to append further send. It will emit a complete signal upon
    *     successful sequence write or an error during write.
    */
-  AeronOutbound send(Publisher<DirectBuffer> dataStream);
+  default AeronOutbound send(Publisher<DirectBuffer> dataStream) {
+    return send(dataStream, buffer -> buffer);
+  }
 
   /**
    * Send data to the peer, listen for any error on write and close on terminal signal
@@ -38,7 +44,12 @@ public interface AeronOutbound extends Publisher<Void> {
    * @return A new {@link AeronOutbound} to append further send. It will emit a complete signal upon
    *     successful sequence write or an error during write.
    */
-  AeronOutbound sendBytes(Publisher<byte[]> dataStream);
+  default AeronOutbound sendBytes(Publisher<byte[]> dataStream) {
+    if (dataStream instanceof Flux) {
+      return send(((Flux<byte[]>) dataStream).map(UnsafeBuffer::new));
+    }
+    return send(((Mono<byte[]>) dataStream).map(UnsafeBuffer::new));
+  }
 
   /**
    * Send data to the peer, listen for any error on write and close on terminal signal
@@ -48,7 +59,18 @@ public interface AeronOutbound extends Publisher<Void> {
    * @return A new {@link AeronOutbound} to append further send. It will emit a complete signal upon
    *     successful sequence write or an error during write.
    */
-  AeronOutbound sendString(Publisher<String> dataStream);
+  default AeronOutbound sendString(Publisher<String> dataStream) {
+    if (dataStream instanceof Flux) {
+      return send(
+          ((Flux<String>) dataStream)
+              .map(s -> s.getBytes(StandardCharsets.UTF_8))
+              .map(UnsafeBuffer::new));
+    }
+    return send(
+        ((Mono<String>) dataStream)
+            .map(s -> s.getBytes(StandardCharsets.UTF_8))
+            .map(UnsafeBuffer::new));
+  }
 
   /**
    * Send data to the peer, listen for any error on write and close on terminal signal
@@ -58,7 +80,12 @@ public interface AeronOutbound extends Publisher<Void> {
    * @return A new {@link AeronOutbound} to append further send. It will emit a complete signal upon
    *     successful sequence write or an error during write.
    */
-  AeronOutbound sendBuffer(Publisher<ByteBuffer> dataStream);
+  default AeronOutbound sendBuffer(Publisher<ByteBuffer> dataStream) {
+    if (dataStream instanceof Flux) {
+      return send(((Flux<ByteBuffer>) dataStream).map(UnsafeBuffer::new));
+    }
+    return send(((Mono<ByteBuffer>) dataStream).map(UnsafeBuffer::new));
+  }
 
   /**
    * Obtain a {@link Mono} of pending outbound(s) write completion.

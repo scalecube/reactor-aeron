@@ -62,7 +62,7 @@ public class AeronConnectionTest extends BaseAeronTest {
     createServer(
         connection -> {
           connection.onDispose().doOnSuccess(aVoid -> latch.countDown()).subscribe();
-          connection.inbound().receive().subscribe(processor);
+          connection.inbound().receive().cast(DirectBuffer.class).subscribe(processor);
           return connection.onDispose();
         });
 
@@ -106,7 +106,9 @@ public class AeronConnectionTest extends BaseAeronTest {
     CountDownLatch latch = new CountDownLatch(1);
     connection.onDispose().doOnSuccess(aVoid -> latch.countDown()).subscribe();
 
-    connection.inbound().receive().asString().log("client").subscribe(processor);
+    DefaultFragmentMapper.asString(connection.inbound().receive())
+        .log("client")
+        .subscribe(processor);
 
     processor.take(1).blockLast(Duration.ofSeconds(4));
 

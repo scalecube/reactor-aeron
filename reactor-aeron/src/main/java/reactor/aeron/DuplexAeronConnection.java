@@ -17,8 +17,8 @@ final class DuplexAeronConnection implements AeronConnection {
 
   private final int sessionId;
 
-  private final DefaultAeronInbound inbound;
-  private final DefaultAeronOutbound outbound;
+  private final AeronInbound inbound;
+  private final AeronOutbound outbound;
 
   private final MonoProcessor<Void> dispose = MonoProcessor.create();
   private final MonoProcessor<Void> onDispose = MonoProcessor.create();
@@ -33,8 +33,8 @@ final class DuplexAeronConnection implements AeronConnection {
    */
   DuplexAeronConnection(
       int sessionId,
-      DefaultAeronInbound inbound,
-      DefaultAeronOutbound outbound,
+      AeronInbound inbound,
+      AeronOutbound outbound,
       MonoProcessor<Void> disposeHook) {
 
     this.sessionId = sessionId;

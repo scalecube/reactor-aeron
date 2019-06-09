@@ -41,7 +41,9 @@ class AeronServerTest extends BaseAeronTest {
 
     createServer(
         connection -> {
-          connection.inbound().receive().asString().log("receive").subscribe(processor);
+          DefaultFragmentMapper.asString(connection.inbound().receive())
+              .log("receive")
+              .subscribe(processor);
           return connection.onDispose();
         });
 
@@ -61,7 +63,12 @@ class AeronServerTest extends BaseAeronTest {
     OnDisposable server =
         createServer(
             connection -> {
-              connection.inbound().receive().log("receive").subscribe(processor);
+              connection
+                  .inbound()
+                  .receive()
+                  .cast(DirectBuffer.class)
+                  .log("receive")
+                  .subscribe(processor);
               return connection.onDispose();
             });
 

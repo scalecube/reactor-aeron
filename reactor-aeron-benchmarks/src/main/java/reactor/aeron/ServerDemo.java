@@ -14,10 +14,7 @@ public class ServerDemo {
         .options("localhost", 13000, 13001)
         .handle(
             connection ->
-                connection
-                    .inbound()
-                    .receive()
-                    .asString()
+                DefaultFragmentMapper.asString(connection.inbound().receive())
                     .log("receive")
                     .then(connection.onDispose()))
         .bind()

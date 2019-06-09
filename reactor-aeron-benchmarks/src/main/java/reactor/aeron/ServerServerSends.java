@@ -44,13 +44,8 @@ public class ServerServerSends {
     static final ByteBufHandler defaultInstance = new ByteBufHandler();
 
     @Override
-    public int estimateLength(ByteBuf buffer) {
-      return buffer.readableBytes();
-    }
-
-    @Override
-    public DirectBuffer map(ByteBuf buffer, int length) {
-      return new UnsafeBuffer(buffer.nioBuffer(), 0, length);
+    public DirectBuffer map(ByteBuf buffer) {
+      return new UnsafeBuffer(buffer.nioBuffer(), 0, buffer.readableBytes());
     }
 
     @Override

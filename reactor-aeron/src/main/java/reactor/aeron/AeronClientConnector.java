@@ -1,9 +1,12 @@
 package reactor.aeron;
 
 import io.aeron.Image;
+import io.aeron.Publication;
 import java.time.Duration;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import org.agrona.CloseHelper;
+import org.agrona.DirectBuffer;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +31,7 @@ final class AeronClientConnector {
   private final AeronOptions options;
   private final AeronResources resources;
   private final Function<? super AeronConnection, ? extends Publisher<Void>> handler;
+  private final DefaultFragmentMapper mapper = new DefaultFragmentMapper();
 
   AeronClientConnector(AeronOptions options) {
     this.options = options;
@@ -43,9 +47,7 @@ final class AeronClientConnector {
   Mono<AeronConnection> start() {
     return Mono.defer(
         () -> {
-          AeronEventLoop eventLoop = resources.nextEventLoop();
-
-          return tryConnect(eventLoop)
+          return tryConnect()
               .flatMap(
                   publication -> {
                     // inbound->MDC(xor(sessionId))->Sub(control-endpoint, xor(sessionId))
@@ -69,7 +71,6 @@ final class AeronClientConnector {
                         .subscription(
                             inboundChannel,
                             STREAM_ID,
-                            eventLoop,
                             image -> {
                               logger.debug(
                                   "{}: created client inbound", Integer.toHexString(sessionId));
@@ -88,19 +89,13 @@ final class AeronClientConnector {
                                   Integer.toHexString(sessionId),
                                   th.toString());
                               // dispose outbound resource
-                              publication.dispose();
+                              CloseHelper.quietClose(publication);
                             })
                         .flatMap(
                             subscription ->
                                 inboundAvailable.flatMap(
                                     image ->
-                                        newConnection(
-                                            sessionId,
-                                            image,
-                                            publication,
-                                            subscription,
-                                            disposeHook,
-                                            eventLoop)))
+                                        newConnection(sessionId, image, publication, disposeHook)))
                         .doOnSuccess(
                             connection ->
                                 logger.debug(
@@ -112,32 +107,23 @@ final class AeronClientConnector {
   }
 
   private Mono<AeronConnection> newConnection(
-      int sessionId,
-      Image image,
-      MessagePublication publication,
-      MessageSubscription subscription,
-      MonoProcessor<Void> disposeHook,
-      AeronEventLoop eventLoop) {
-
-    return resources
-        .inbound(image, subscription, eventLoop)
-        .doOnError(
-            ex -> {
-              subscription.dispose();
-              publication.dispose();
+      int sessionId, Image image, Publication publication, MonoProcessor<Void> disposeHook) {
+    PublicationAgent publicationAgent = new PublicationAgent(publication);
+    ImageAgent<DirectBuffer> imageAgent = new ImageAgent<>(image, mapper, true);
+    DuplexAeronConnection connection =
+        new DuplexAeronConnection(sessionId, imageAgent, publicationAgent, disposeHook);
+    return connection
+        .start(handler)
+        .doOnSuccess(
+            c -> {
+              AeronEventLoop eventLoop = resources.nextEventLoop();
+              eventLoop.register(imageAgent);
+              eventLoop.register(publicationAgent);
             })
-        .flatMap(
-            inbound -> {
-              DefaultAeronOutbound outbound = new DefaultAeronOutbound(publication);
-
-              DuplexAeronConnection connection =
-                  new DuplexAeronConnection(sessionId, inbound, outbound, disposeHook);
-
-              return connection.start(handler).doOnError(ex -> connection.dispose());
-            });
+        .doOnError(ex -> connection.dispose());
   }
 
-  private Mono<MessagePublication> tryConnect(AeronEventLoop eventLoop) {
+  private Mono<Publication> tryConnect() {
     return Mono.defer(
         () -> {
           int retryCount = options.connectRetryCount();
@@ -145,12 +131,45 @@ final class AeronClientConnector {
 
           // outbound->Pub(endpoint, sessionId)
           return Mono.fromCallable(this::getOutboundChannel)
-              .flatMap(channel -> resources.publication(channel, STREAM_ID, options, eventLoop))
-              .flatMap(mp -> mp.ensureConnected().doOnError(ex -> mp.dispose()))
+              .flatMap(channel -> resources.publication(channel, STREAM_ID))
+              .flatMap(
+                  publication ->
+                      ensureConnected(publication)
+                          .doOnError(ex -> CloseHelper.quietClose(publication)))
               .retryBackoff(retryCount, Duration.ZERO, retryInterval)
               .doOnError(
                   ex -> logger.warn("aeron.Publication is not connected after several retries"));
         });
+  }
+
+  /**
+   * Spins (in async fashion) until {@link Publication#isConnected()} would have returned {@code
+   * true} or {@code connectTimeout} elapsed.
+   *
+   * @return mono result
+   */
+  private Mono<Publication> ensureConnected(Publication publication) {
+    return Mono.defer(
+        () -> {
+          Duration connectTimeout = options.connectTimeout();
+          Duration retryInterval = Duration.ofMillis(100);
+          long retryCount = Math.max(connectTimeout.toMillis() / retryInterval.toMillis(), 1);
+
+          return ensureConnected0(publication)
+              .retryBackoff(retryCount, retryInterval, retryInterval)
+              .doOnError(
+                  ex -> logger.warn("aeron.Publication is not connected after several retries"))
+              .thenReturn(publication);
+        });
+  }
+
+  private Mono<Void> ensureConnected0(Publication publication) {
+    return Mono.defer(
+        () ->
+            publication.isConnected()
+                ? Mono.empty()
+                : Mono.error(
+                    AeronExceptions.failWithPublication("aeron.Publication is not connected")));
   }
 
   private String getOutboundChannel() {
