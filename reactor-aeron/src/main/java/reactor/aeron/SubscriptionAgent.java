@@ -49,6 +49,13 @@ public class SubscriptionAgent<T> implements Agent, AeronInbound<T>, Disposable 
   private volatile CoreSubscriber<T> destinationSubscriber;
   private Exception ex;
 
+  /**
+   * Creates subscription agent.
+   *
+   * @param subscription subscription
+   * @param mapper fragment mapper
+   * @param shouldCloseSubscription should the agent close subscription when the agent is closed?
+   */
   public SubscriptionAgent(
       Subscription subscription, FragmentMapper<T> mapper, boolean shouldCloseSubscription) {
     this.subscription = subscription;

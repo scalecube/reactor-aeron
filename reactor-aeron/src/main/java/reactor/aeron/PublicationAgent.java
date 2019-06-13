@@ -41,6 +41,11 @@ public final class PublicationAgent implements Agent, AeronOutbound, Disposable 
 
   private volatile boolean isDisposed = false;
 
+  /**
+   * Creates publication agent.
+   *
+   * @param publication publication
+   */
   public PublicationAgent(Publication publication) {
     this.publication = Objects.requireNonNull(publication, "publication cannot be null");
   }
@@ -180,12 +185,12 @@ public final class PublicationAgent implements Agent, AeronOutbound, Disposable 
   }
 
   @Override
-  public <B> AeronOutbound send(Publisher<B> dataStream,
-      DirectBufferHandler<? super B> bufferHandler) {
+  public <B> AeronOutbound send(
+      Publisher<B> dataStream, DirectBufferHandler<? super B> bufferHandler) {
     return then(publish(dataStream, bufferHandler));
   }
 
-  private  <B> Mono<Void> publish(
+  private <B> Mono<Void> publish(
       Publisher<B> publisher, DirectBufferHandler<? super B> bufferHandler) {
     return Mono.defer(
         () -> {

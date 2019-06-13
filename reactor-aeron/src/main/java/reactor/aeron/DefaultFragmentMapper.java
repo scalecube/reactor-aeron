@@ -13,6 +13,12 @@ public class DefaultFragmentMapper implements FragmentMapper<DirectBuffer> {
     return new UnsafeBuffer(buffer, offset, length);
   }
 
+  /**
+   * Converts incoming {@link DirectBuffer} to {@link String}.
+   *
+   * @param flux {@link DirectBuffer} stream
+   * @return {@link String} stream
+   */
   public static Flux<String> asString(Flux<?> flux) {
     return flux.cast(DirectBuffer.class)
         .map(

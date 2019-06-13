@@ -51,13 +51,28 @@ public class ImageAgent<T> implements Agent, AeronInbound<T>, Disposable {
   private volatile CoreSubscriber<T> destinationSubscriber;
   private Exception ex;
 
+  /**
+   * Creates image agent.
+   *
+   * @param image image
+   * @param mapper fragment mapper
+   * @param shouldCloseSubscription should the agent close image subscription when the agent is
+   *     closed?
+   */
   public ImageAgent(Image image, FragmentMapper<T> mapper, boolean shouldCloseSubscription) {
-    this.image = image;
-    this.mapper = mapper;
-    this.shouldCloseSubscription = shouldCloseSubscription;
-    this.stopPosition = Aeron.NULL_VALUE;
+    this(image, mapper, shouldCloseSubscription, Aeron.NULL_VALUE);
   }
 
+  /**
+   * Creates image agent.
+   *
+   * @param image image
+   * @param mapper fragment mapper
+   * @param shouldCloseSubscription should the agent close image subscription when the agent is
+   *     closed?
+   * @param stopPosition expected stop position of the given image. A negative value means an
+   *     endless stream.
+   */
   public ImageAgent(
       Image image, FragmentMapper<T> mapper, boolean shouldCloseSubscription, long stopPosition) {
     this.image = image;
