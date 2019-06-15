@@ -86,7 +86,6 @@ public final class AeronPingClient {
             connection
                 .inbound()
                 .receive()
-                .cast(DirectBuffer.class)
                 .take(count)
                 .doOnNext(
                     buffer -> {

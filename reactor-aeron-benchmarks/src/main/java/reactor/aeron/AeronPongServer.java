@@ -1,7 +1,5 @@
 package reactor.aeron;
 
-import org.agrona.DirectBuffer;
-
 public final class AeronPongServer {
 
   /**
@@ -28,7 +26,7 @@ public final class AeronPongServer {
             connection ->
                 connection
                     .outbound()
-                    .send(connection.inbound().receive().cast(DirectBuffer.class))
+                    .send(connection.inbound().receive())
                     .then(connection.onDispose()))
         .bind()
         .block()
