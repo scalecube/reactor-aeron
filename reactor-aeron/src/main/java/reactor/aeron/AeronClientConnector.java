@@ -30,7 +30,7 @@ final class AeronClientConnector {
 
   private final AeronOptions options;
   private final AeronResources resources;
-  private final Function<? super AeronConnection, ? extends Publisher<Void>> handler;
+  private final Function<? super AeronConnection<DirectBuffer>, ? extends Publisher<Void>> handler;
   private final DefaultFragmentMapper mapper = new DefaultFragmentMapper();
 
   AeronClientConnector(AeronOptions options) {
@@ -44,7 +44,7 @@ final class AeronClientConnector {
    *
    * @return mono result
    */
-  Mono<AeronConnection> start() {
+  Mono<AeronConnection<DirectBuffer>> start() {
     return Mono.defer(
         () -> {
           return tryConnect()
@@ -106,12 +106,12 @@ final class AeronClientConnector {
         });
   }
 
-  private Mono<AeronConnection> newConnection(
+  private Mono<AeronConnection<DirectBuffer>> newConnection(
       int sessionId, Image image, Publication publication, MonoProcessor<Void> disposeHook) {
     PublicationAgent publicationAgent = new PublicationAgent(publication);
     ImageAgent<DirectBuffer> imageAgent = new ImageAgent<>(image, mapper, true);
-    DuplexAeronConnection connection =
-        new DuplexAeronConnection(sessionId, imageAgent, publicationAgent, disposeHook);
+    DuplexAeronConnection<DirectBuffer> connection =
+        new DuplexAeronConnection<>(sessionId, imageAgent, publicationAgent, disposeHook);
     return connection
         .start(handler)
         .doOnSuccess(

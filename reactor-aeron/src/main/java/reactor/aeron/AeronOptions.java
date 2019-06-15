@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import org.agrona.DirectBuffer;
 import org.reactivestreams.Publisher;
 
 /**
@@ -14,7 +15,7 @@ import org.reactivestreams.Publisher;
 public final class AeronOptions {
 
   private AeronResources resources;
-  private Function<? super AeronConnection, ? extends Publisher<Void>> handler;
+  private Function<? super AeronConnection<DirectBuffer>, ? extends Publisher<Void>> handler;
   private AeronChannelUriString inboundUri = new AeronChannelUriString();
   private AeronChannelUriString outboundUri = new AeronChannelUriString();
   private Duration connectTimeout = Duration.ofSeconds(5);
@@ -45,12 +46,12 @@ public final class AeronOptions {
     return set(s -> s.resources = resources);
   }
 
-  public Function<? super AeronConnection, ? extends Publisher<Void>> handler() {
+  public Function<? super AeronConnection<DirectBuffer>, ? extends Publisher<Void>> handler() {
     return handler;
   }
 
   public AeronOptions handler(
-      Function<? super AeronConnection, ? extends Publisher<Void>> handler) {
+      Function<? super AeronConnection<DirectBuffer>, ? extends Publisher<Void>> handler) {
     return set(s -> s.handler = handler);
   }
 

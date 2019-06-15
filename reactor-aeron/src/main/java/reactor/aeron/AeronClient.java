@@ -2,6 +2,7 @@ package reactor.aeron;
 
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
+import org.agrona.DirectBuffer;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 
@@ -28,7 +29,7 @@ public final class AeronClient {
    *
    * @return mono handle of result
    */
-  public Mono<? extends AeronConnection> connect() {
+  public Mono<? extends AeronConnection<DirectBuffer>> connect() {
     return connect(s -> s);
   }
 
@@ -38,7 +39,7 @@ public final class AeronClient {
    * @param op unary opearator for performing setup of options
    * @return mono handle of result
    */
-  public Mono<? extends AeronConnection> connect(UnaryOperator<AeronOptions> op) {
+  public Mono<? extends AeronConnection<DirectBuffer>> connect(UnaryOperator<AeronOptions> op) {
     return Mono.defer(() -> new AeronClientConnector(op.apply(options)).start());
   }
 
@@ -86,7 +87,8 @@ public final class AeronClient {
    *     terminates.
    * @return new {@code AeronClient} with handler
    */
-  public AeronClient handle(Function<? super AeronConnection, ? extends Publisher<Void>> handler) {
+  public AeronClient handle(
+      Function<? super AeronConnection<DirectBuffer>, ? extends Publisher<Void>> handler) {
     return new AeronClient(options.handler(handler));
   }
 }

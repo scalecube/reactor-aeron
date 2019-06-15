@@ -63,7 +63,7 @@ public class AeronConnectionTest extends BaseAeronTest {
     createServer(
         connection -> {
           connection.onDispose().doOnSuccess(aVoid -> latch.countDown()).subscribe();
-          connection.inbound().receive().cast(DirectBuffer.class).subscribe(processor);
+          connection.inbound().receive().subscribe(processor);
           return connection.onDispose();
         });
 
@@ -102,12 +102,12 @@ public class AeronConnectionTest extends BaseAeronTest {
 
     ReplayProcessor<String> processor = ReplayProcessor.create();
 
-    AeronConnection connection = createConnection();
+    AeronConnection<DirectBuffer> connection = createConnection();
 
     CountDownLatch latch = new CountDownLatch(1);
     connection.onDispose().doOnSuccess(aVoid -> latch.countDown()).subscribe();
 
-    connection.<DirectBuffer>inbound().receive().map(asString()).log("client").subscribe(processor);
+    connection.inbound().receive().map(asString()).log("client").subscribe(processor);
 
     processor.take(1).blockLast(Duration.ofSeconds(4));
 
@@ -143,7 +143,7 @@ public class AeronConnectionTest extends BaseAeronTest {
 
     CountDownLatch clientConnectionLatch = new CountDownLatch(2);
 
-    AeronConnection client = createConnection();
+    AeronConnection<DirectBuffer> client = createConnection();
 
     client
         .inbound() //
@@ -222,7 +222,7 @@ public class AeronConnectionTest extends BaseAeronTest {
     assertTrue(await, "serverConnectionLatch: " + serverConnectionLatch.getCount());
   }
 
-  private AeronConnection createConnection() {
+  private AeronConnection<DirectBuffer> createConnection() {
     return AeronClient.create(resources)
         .options("localhost", serverPort, serverControlPort)
         .connect()
@@ -230,7 +230,7 @@ public class AeronConnectionTest extends BaseAeronTest {
   }
 
   private OnDisposable createServer(
-      Function<? super AeronConnection, ? extends Publisher<Void>> handler) {
+      Function<? super AeronConnection<DirectBuffer>, ? extends Publisher<Void>> handler) {
     return AeronServer.create(resources)
         .options("localhost", serverPort, serverControlPort)
         .handle(handler)

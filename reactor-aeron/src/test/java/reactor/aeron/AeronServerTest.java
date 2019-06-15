@@ -42,12 +42,7 @@ class AeronServerTest extends BaseAeronTest {
 
     createServer(
         connection -> {
-          connection
-              .<DirectBuffer>inbound()
-              .receive()
-              .map(asString())
-              .log("receive")
-              .subscribe(processor);
+          connection.inbound().receive().map(asString()).log("receive").subscribe(processor);
           return connection.onDispose();
         });
 
@@ -67,12 +62,7 @@ class AeronServerTest extends BaseAeronTest {
     OnDisposable server =
         createServer(
             connection -> {
-              connection
-                  .inbound()
-                  .receive()
-                  .cast(DirectBuffer.class)
-                  .log("receive")
-                  .subscribe(processor);
+              connection.inbound().receive().log("receive").subscribe(processor);
               return connection.onDispose();
             });
 
@@ -93,7 +83,7 @@ class AeronServerTest extends BaseAeronTest {
     assertTrue(new ThreadWatcher().awaitTerminated(5000, "single-", "parallel-"));
   }
 
-  private AeronConnection createConnection() {
+  private AeronConnection<DirectBuffer> createConnection() {
     return AeronClient.create(resources)
         .options("localhost", serverPort, serverControlPort)
         .connect()
@@ -101,7 +91,7 @@ class AeronServerTest extends BaseAeronTest {
   }
 
   private OnDisposable createServer(
-      Function<? super AeronConnection, ? extends Publisher<Void>> handler) {
+      Function<? super AeronConnection<DirectBuffer>, ? extends Publisher<Void>> handler) {
     return AeronServer.create(resources)
         .options("localhost", serverPort, serverControlPort)
         .handle(handler)

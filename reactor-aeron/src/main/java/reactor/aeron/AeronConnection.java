@@ -13,7 +13,7 @@ import reactor.core.publisher.SignalType;
  * for reading and {@link #outbound()} for writing data. AeronConnection interface comes with {@link
  * OnDisposable} and {@link #disposeSubscriber()} function for convenient resource cleanup.
  */
-public interface AeronConnection extends OnDisposable {
+public interface AeronConnection<IN> extends OnDisposable {
 
   /**
    * Return the {@link AeronInbound} read API from this connection. If {@link AeronConnection} has
@@ -21,7 +21,7 @@ public interface AeronConnection extends OnDisposable {
    *
    * @return {@code AeronInbound} instance
    */
-  <T> AeronInbound<T> inbound();
+  AeronInbound<IN> inbound();
 
   /**
    * Return the {@link AeronOutbound} write API from this connection. If {@link AeronConnection} has

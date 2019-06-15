@@ -33,7 +33,7 @@ public final class AeronPingClient {
             .start()
             .block();
 
-    AeronConnection connection =
+    AeronConnection<DirectBuffer> connection =
         AeronClient.create(resources)
             .options(
                 Configurations.MDC_ADDRESS,
@@ -71,7 +71,7 @@ public final class AeronPingClient {
     connection.onDispose(resources).onDispose().block();
   }
 
-  private static void roundTripMessages(AeronConnection connection, long count) {
+  private static void roundTripMessages(AeronConnection<DirectBuffer> connection, long count) {
     HISTOGRAM.reset();
 
     Disposable disp = reporter.start();

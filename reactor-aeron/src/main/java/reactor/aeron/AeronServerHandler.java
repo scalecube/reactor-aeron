@@ -36,7 +36,7 @@ final class AeronServerHandler implements OnDisposable {
 
   private final AeronOptions options;
   private final AeronResources resources;
-  private final Function<? super AeronConnection, ? extends Publisher<Void>> handler;
+  private final Function<? super AeronConnection<DirectBuffer>, ? extends Publisher<Void>> handler;
   private final DefaultFragmentMapper mapper = new DefaultFragmentMapper();
 
   //  private volatile MessageSubscription acceptorSubscription; // server acceptor subscription
@@ -125,8 +125,8 @@ final class AeronServerHandler implements OnDisposable {
     PublicationAgent publicationAgent = new PublicationAgent(publication);
     ImageAgent<DirectBuffer> imageAgent = new ImageAgent<>(image, mapper, false);
 
-    DuplexAeronConnection connection =
-        new DuplexAeronConnection(sessionId, imageAgent, publicationAgent, disposeHook);
+    DuplexAeronConnection<DirectBuffer> connection =
+        new DuplexAeronConnection<>(sessionId, imageAgent, publicationAgent, disposeHook);
 
     disposeHooks.put(sessionId, disposeHook);
 
