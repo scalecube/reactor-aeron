@@ -72,7 +72,7 @@ final class DuplexAeronConnection implements AeronConnection {
   }
 
   @Override
-  public AeronInbound inbound() {
+  public <T> AeronInbound<T> inbound() {
     return inbound;
   }
 

@@ -3,6 +3,7 @@ package reactor.aeron;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static reactor.aeron.DefaultFragmentMapper.asString;
 
 import java.nio.ByteBuffer;
 import java.time.Duration;
@@ -106,9 +107,7 @@ public class AeronConnectionTest extends BaseAeronTest {
     CountDownLatch latch = new CountDownLatch(1);
     connection.onDispose().doOnSuccess(aVoid -> latch.countDown()).subscribe();
 
-    DefaultFragmentMapper.asString(connection.inbound().receive())
-        .log("client")
-        .subscribe(processor);
+    connection.<DirectBuffer>inbound().receive().map(asString()).log("client").subscribe(processor);
 
     processor.take(1).blockLast(Duration.ofSeconds(4));
 

@@ -1,5 +1,9 @@
 package reactor.aeron;
 
+import static reactor.aeron.DefaultFragmentMapper.asString;
+
+import org.agrona.DirectBuffer;
+
 public class ServerDemo {
 
   /**
@@ -14,7 +18,10 @@ public class ServerDemo {
         .options("localhost", 13000, 13001)
         .handle(
             connection ->
-                DefaultFragmentMapper.asString(connection.inbound().receive())
+                connection
+                    .<DirectBuffer>inbound()
+                    .receive()
+                    .map(asString())
                     .log("receive")
                     .then(connection.onDispose()))
         .bind()

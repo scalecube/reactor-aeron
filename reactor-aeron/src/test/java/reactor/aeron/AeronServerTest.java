@@ -1,6 +1,7 @@
 package reactor.aeron;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static reactor.aeron.DefaultFragmentMapper.asString;
 
 import java.time.Duration;
 import java.util.function.Function;
@@ -41,7 +42,10 @@ class AeronServerTest extends BaseAeronTest {
 
     createServer(
         connection -> {
-          DefaultFragmentMapper.asString(connection.inbound().receive())
+          connection
+              .<DirectBuffer>inbound()
+              .receive()
+              .map(asString())
               .log("receive")
               .subscribe(processor);
           return connection.onDispose();
