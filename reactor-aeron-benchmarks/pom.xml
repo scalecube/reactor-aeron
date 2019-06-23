@@ -6,7 +6,7 @@
 
   <properties>
     <netty.version>4.1.33.Final</netty.version>
-    <rsocket.version>0.12.2-RC3</rsocket.version>
+    <rsocket.version>0.12.2-RC4</rsocket.version>
     <rsocket-transport-aeron.version>0.1.12</rsocket-transport-aeron.version>
     <hdrhistogram.version>2.1.10</hdrhistogram.version>
     <jmh.version>1.21</jmh.version>
