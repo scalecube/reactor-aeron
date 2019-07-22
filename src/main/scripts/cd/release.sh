@@ -15,14 +15,14 @@ commit_to_develop() {
  git push origin develop
 }
 
-function check_next_version {
+check_next_version() {
   export NEXT_VERSION=$(echo $TRAVIS_COMMIT_MESSAGE | grep -E -o '[0-9]+\.[0-9]+\.[0-9]+-SNAPSHOT')
   if [ -n "$NEXT_VERSION" ] ; then
     export MVN_NEXT_VERSION=-DdevelopmentVersion=$NEXT_VERSION
   fi
 }
 
-function check_tag_for_rc {
+check_tag_for_rc() {
   export VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
   if [ -n "$TRAVIS_TAG" ] ; then
     RC_VER=$(echo $TRAVIS_TAG | grep -E -o 'RC-?[0-9]+')
