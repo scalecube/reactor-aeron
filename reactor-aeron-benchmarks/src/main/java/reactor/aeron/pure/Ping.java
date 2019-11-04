@@ -6,6 +6,7 @@ import io.aeron.Image;
 import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.driver.MediaDriver;
+import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import java.time.Duration;
@@ -126,6 +127,10 @@ public class Ping {
     Disposable reporter = latencyReporter.start();
 
     final Image image = subscription.imageAtIndex(0);
+
+    BufferClaim bufferClaim = new BufferClaim();
+
+    publication.tryClaim(1, bufferClaim);
 
     for (long i = 0; i < count; i++) {
       long offeredPosition;
