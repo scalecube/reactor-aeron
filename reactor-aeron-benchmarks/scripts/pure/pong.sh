@@ -15,4 +15,5 @@ java \
     -Dreactor.aeron.sample.exclusive.publications=true \
     -Dreactor.aeron.sample.idle.strategy=yielding \
     -Dreactor.aeron.sample.frameCountLimit=16384 \
+    -Daeron.mtu.length=65504 \
     ${JVM_OPTS} reactor.aeron.pure.Pong

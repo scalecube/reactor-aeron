@@ -15,5 +15,5 @@ java \
     -Dreactor.aeron.sample.frameCountLimit=16384 \
     -Dreactor.aeron.sample.messageLength=16 \
     -Dreactor.aeron.sample.request=128 \
-    -Daeron.mtu.length=16k \
+    -Daeron.mtu.length=65504 \
     ${JVM_OPTS} reactor.aeron.AeronPingClient
