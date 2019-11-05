@@ -92,3 +92,4 @@ Benchmark: `reactor-aeron` vs `reactor-netty` vs `pure-aeron` vs `rsocket` runni
 ## License
 
 `Reactor Aeron` is Open Source Software released under the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0)
+
