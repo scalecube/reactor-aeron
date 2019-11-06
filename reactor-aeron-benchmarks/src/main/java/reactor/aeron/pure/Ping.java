@@ -5,12 +5,10 @@ import io.aeron.FragmentAssembler;
 import io.aeron.Image;
 import io.aeron.Publication;
 import io.aeron.Subscription;
-import io.aeron.driver.Configuration;
 import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
-import io.aeron.protocol.DataHeaderFlyweight;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -133,13 +131,12 @@ public class Ping {
     final Image image = subscription.imageAtIndex(0);
 
     BufferClaim bufferClaim = new BufferClaim();
-    int length = Configuration.MAX_UDP_PAYLOAD_LENGTH - DataHeaderFlyweight.HEADER_LENGTH;
 
     for (long i = 0; i < count; i++) {
       long offeredPosition;
 
       for (; ; ) {
-        offeredPosition = publication.tryClaim(length, bufferClaim);
+        offeredPosition = publication.tryClaim(MESSAGE_LENGTH, bufferClaim);
 
         if (offeredPosition <= 0) {
           POLLING_IDLE_STRATEGY.reset();

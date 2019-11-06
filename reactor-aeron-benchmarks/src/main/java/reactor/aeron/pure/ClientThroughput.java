@@ -6,10 +6,8 @@ import io.aeron.CommonContext;
 import io.aeron.Image;
 import io.aeron.Publication;
 import io.aeron.Subscription;
-import io.aeron.driver.Configuration;
 import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.BufferClaim;
-import io.aeron.protocol.DataHeaderFlyweight;
 import java.util.concurrent.CountDownLatch;
 import org.agrona.BitUtil;
 import org.agrona.BufferUtil;
@@ -97,10 +95,9 @@ public class ClientThroughput {
         System.out.println("Pinging " + NUMBER_OF_MESSAGES + " messages");
 
         BufferClaim bufferClaim = new BufferClaim();
-        int length = Configuration.MAX_UDP_PAYLOAD_LENGTH - DataHeaderFlyweight.HEADER_LENGTH;
 
         for (long i = 0; i < Long.MAX_VALUE; ) {
-          long offeredPosition = publication.tryClaim(length, bufferClaim);
+          long offeredPosition = publication.tryClaim(MESSAGE_LENGTH, bufferClaim);
 
           if (offeredPosition <= 0) {
             POLLING_IDLE_STRATEGY.idle();
