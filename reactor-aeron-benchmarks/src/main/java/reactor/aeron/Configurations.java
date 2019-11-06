@@ -13,7 +13,7 @@ import org.agrona.concurrent.YieldingIdleStrategy;
 /** Configuration used for samples with defaults which can be overridden by system properties. */
 public interface Configurations {
   int FRAGMENT_COUNT_LIMIT = Integer.getInteger("reactor.aeron.sample.frameCountLimit", 10);
-  int MESSAGE_LENGTH = Integer.getInteger("reactor.aeron.sample.messageLength", 128);
+  int MESSAGE_LENGTH = Integer.getInteger("reactor.aeron.sample.messageLength", 256);
   int REQUESTED = Integer.getInteger("reactor.aeron.sample.request", 1);
   
   int WARMUP_NUMBER_OF_ITERATIONS = Integer.getInteger("reactor.aeron.sample.warmup.iterations", 5);
