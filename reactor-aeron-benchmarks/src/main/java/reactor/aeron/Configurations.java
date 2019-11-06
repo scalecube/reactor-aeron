@@ -13,12 +13,12 @@ import org.agrona.concurrent.YieldingIdleStrategy;
 /** Configuration used for samples with defaults which can be overridden by system properties. */
 public interface Configurations {
   int FRAGMENT_COUNT_LIMIT = Integer.getInteger("reactor.aeron.sample.frameCountLimit", 10);
-  int MESSAGE_LENGTH = Integer.getInteger("reactor.aeron.sample.messageLength", 128);
+  int MESSAGE_LENGTH = Integer.getInteger("reactor.aeron.sample.messageLength", 256);
   int REQUESTED = Integer.getInteger("reactor.aeron.sample.request", 1);
   
   int WARMUP_NUMBER_OF_ITERATIONS = Integer.getInteger("reactor.aeron.sample.warmup.iterations", 5);
-  long WARMUP_NUMBER_OF_MESSAGES = Long.getLong("reactor.aeron.sample.warmup.messages", 10);
-  long NUMBER_OF_MESSAGES = Long.getLong("reactor.aeron.sample.messages", 100);
+  long WARMUP_NUMBER_OF_MESSAGES = Long.getLong("reactor.aeron.sample.warmup.messages", 10_000);
+  long NUMBER_OF_MESSAGES = Long.getLong("reactor.aeron.sample.messages", 100_000_000);
   boolean EXCLUSIVE_PUBLICATIONS =
       Boolean.getBoolean("reactor.aeron.sample.exclusive.publications");
   boolean EMBEDDED_MEDIA_DRIVER = Boolean.getBoolean("reactor.aeron.sample.embeddedMediaDriver");
