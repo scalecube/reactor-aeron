@@ -7,15 +7,12 @@ JAR_FILE=$(ls target/reactor-aeron-benchmarks*.jar |grep jar)
 
 java \
     -cp ${JAR_FILE}:target/lib/* \
-    -XX:BiasedLockingStartupDelay=0 \
-    -Djava.net.preferIPv4Stack=true \
-    -Daeron.term.buffer.sparse.file=false \
+    -XX:+UnlockDiagnosticVMOptions \
+    -XX:GuaranteedSafepointInterval=300000 \
     -Daeron.threading.mode=SHARED \
     -Dagrona.disable.bounds.checks=true \
     -Dreactor.aeron.sample.embeddedMediaDriver=true \
     -Dreactor.aeron.sample.exclusive.publications=true \
     -Dreactor.aeron.sample.idle.strategy=yielding \
-    -Dreactor.aeron.sample.frameCountLimit=16384 \
-    -Dreactor.aeron.sample.messageLength=1024 \
-    -Daeron.mtu.length=16k \
+    -Daeron.mtu.length=65504 \
     ${JVM_OPTS} reactor.aeron.pure.ClientThroughput
