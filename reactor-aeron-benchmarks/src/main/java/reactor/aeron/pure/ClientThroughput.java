@@ -6,15 +6,20 @@ import io.aeron.CommonContext;
 import io.aeron.Image;
 import io.aeron.Publication;
 import io.aeron.Subscription;
+import io.aeron.driver.Configuration;
 import io.aeron.driver.MediaDriver;
+import io.aeron.logbuffer.BufferClaim;
+import io.aeron.protocol.DataHeaderFlyweight;
 import java.util.concurrent.CountDownLatch;
 import org.agrona.BitUtil;
 import org.agrona.BufferUtil;
 import org.agrona.CloseHelper;
+import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.console.ContinueBarrier;
 import reactor.aeron.Configurations;
+import reactor.core.Exceptions;
 
 public class ClientThroughput {
   private static final int STREAM_ID = Configurations.MDC_STREAM_ID;
@@ -91,14 +96,28 @@ public class ClientThroughput {
       do {
         System.out.println("Pinging " + NUMBER_OF_MESSAGES + " messages");
 
+        BufferClaim bufferClaim = new BufferClaim();
+        int length = Configuration.MAX_UDP_PAYLOAD_LENGTH - DataHeaderFlyweight.HEADER_LENGTH;
+
         for (long i = 0; i < Long.MAX_VALUE; ) {
-          OFFER_BUFFER.putLong(0, System.nanoTime());
-          final long offeredPosition = publication.offer(OFFER_BUFFER, 0, MESSAGE_LENGTH);
-          if (offeredPosition > 0) {
-            i++;
+          long offeredPosition = publication.tryClaim(length, bufferClaim);
+
+          if (offeredPosition <= 0) {
+            POLLING_IDLE_STRATEGY.idle();
             continue;
           }
-          POLLING_IDLE_STRATEGY.idle();
+
+          try {
+            MutableDirectBuffer directBuffer = bufferClaim.buffer();
+            int offset = bufferClaim.offset();
+            OFFER_BUFFER.putLong(0, System.nanoTime());
+            directBuffer.putBytes(offset, OFFER_BUFFER, 0, MESSAGE_LENGTH);
+            bufferClaim.commit();
+            i++;
+          } catch (Exception ex) {
+            bufferClaim.abort();
+            throw Exceptions.propagate(ex);
+          }
         }
 
         System.out.println("Histogram of RTT latencies in microseconds.");

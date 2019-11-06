@@ -5,10 +5,12 @@ import io.aeron.FragmentAssembler;
 import io.aeron.Image;
 import io.aeron.Publication;
 import io.aeron.Subscription;
+import io.aeron.driver.Configuration;
 import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
+import io.aeron.protocol.DataHeaderFlyweight;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -17,12 +19,14 @@ import org.agrona.BitUtil;
 import org.agrona.BufferUtil;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.console.ContinueBarrier;
 import reactor.aeron.Configurations;
 import reactor.aeron.LatencyReporter;
 import reactor.core.Disposable;
+import reactor.core.Exceptions;
 import reactor.core.publisher.Mono;
 
 /**
@@ -129,15 +133,31 @@ public class Ping {
     final Image image = subscription.imageAtIndex(0);
 
     BufferClaim bufferClaim = new BufferClaim();
-
-    publication.tryClaim(1, bufferClaim);
+    int length = Configuration.MAX_UDP_PAYLOAD_LENGTH - DataHeaderFlyweight.HEADER_LENGTH;
 
     for (long i = 0; i < count; i++) {
       long offeredPosition;
 
-      do {
-        OFFER_BUFFER.putLong(0, System.nanoTime());
-      } while ((offeredPosition = publication.offer(OFFER_BUFFER, 0, MESSAGE_LENGTH)) < 0L);
+      for (; ; ) {
+        offeredPosition = publication.tryClaim(length, bufferClaim);
+
+        if (offeredPosition <= 0) {
+          POLLING_IDLE_STRATEGY.reset();
+          continue;
+        }
+
+        try {
+          MutableDirectBuffer directBuffer = bufferClaim.buffer();
+          int offset = bufferClaim.offset();
+          OFFER_BUFFER.putLong(0, System.nanoTime());
+          directBuffer.putBytes(offset, OFFER_BUFFER, 0, MESSAGE_LENGTH);
+          bufferClaim.commit();
+          break;
+        } catch (Exception ex) {
+          bufferClaim.abort();
+          throw Exceptions.propagate(ex);
+        }
+      }
 
       POLLING_IDLE_STRATEGY.reset();
 
