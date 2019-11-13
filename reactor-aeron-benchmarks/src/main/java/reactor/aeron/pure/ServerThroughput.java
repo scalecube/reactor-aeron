@@ -22,7 +22,7 @@ public class ServerThroughput {
   private static final String OUTBOUND_CHANNEL =
       new ChannelUriStringBuilder()
           .controlEndpoint(Configurations.MDC_ADDRESS + ':' + CONTROL_PORT)
-          .sessionId(SESSION_ID ^ Integer.MAX_VALUE)
+          .sessionId(~SESSION_ID)
           .media("udp")
           .reliable(Boolean.TRUE)
           .build();

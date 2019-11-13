@@ -49,7 +49,7 @@ public class MdcPingAsync {
       new ChannelUriStringBuilder()
           .controlEndpoint(Configurations.MDC_ADDRESS + ':' + CONTROL_PORT)
           .controlMode(CommonContext.MDC_CONTROL_MODE_DYNAMIC)
-          .sessionId(SESSION_ID ^ Integer.MAX_VALUE)
+          .sessionId(~SESSION_ID)
           .reliable(Boolean.TRUE)
           .media("udp")
           .build();

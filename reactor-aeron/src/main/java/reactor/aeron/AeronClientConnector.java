@@ -53,7 +53,7 @@ final class AeronClientConnector {
                     String inboundChannel =
                         options
                             .inboundUri()
-                            .uri(b -> b.sessionId(sessionId ^ Integer.MAX_VALUE))
+                            .uri(b -> b.sessionId(~sessionId))
                             .asString();
                     logger.debug(
                         "{}: creating client connection: {}",

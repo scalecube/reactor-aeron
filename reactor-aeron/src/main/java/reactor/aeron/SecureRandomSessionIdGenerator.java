@@ -17,6 +17,6 @@ public final class SecureRandomSessionIdGenerator implements Supplier<Integer> {
 
   @Override
   public Integer get() {
-    return random.nextInt(Integer.MAX_VALUE);
+    return random.nextInt();
   }
 }
