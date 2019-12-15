@@ -85,7 +85,7 @@ public class AeronConnectionTest extends BaseAeronTest {
 
     connection.dispose();
 
-    latch.await(IMAGE_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
+    latch.await(IMAGE_TIMEOUT.multipliedBy(2).toMillis(), TimeUnit.MILLISECONDS);
 
     assertEquals(0, latch.getCount());
   }
