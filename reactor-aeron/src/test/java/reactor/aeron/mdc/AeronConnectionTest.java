@@ -1,4 +1,4 @@
-package reactor.aeron;
+package reactor.aeron.mdc;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -16,6 +16,13 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
+import reactor.aeron.BaseAeronTest;
+import reactor.aeron.OnDisposable;
+import reactor.aeron.SocketUtils;
+import reactor.aeron.mdc.AeronClient;
+import reactor.aeron.mdc.AeronConnection;
+import reactor.aeron.mdc.AeronResources;
+import reactor.aeron.mdc.AeronServer;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.ReplayProcessor;
@@ -113,7 +120,7 @@ public class AeronConnectionTest extends BaseAeronTest {
 
     server.dispose();
 
-    latch.await(IMAGE_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
+    latch.await(IMAGE_TIMEOUT.multipliedBy(2).toMillis(), TimeUnit.MILLISECONDS);
 
     assertEquals(0, latch.getCount());
   }

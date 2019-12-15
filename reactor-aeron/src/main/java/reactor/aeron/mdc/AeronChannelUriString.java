@@ -1,4 +1,4 @@
-package reactor.aeron;
+package reactor.aeron.mdc;
 
 import io.aeron.ChannelUriStringBuilder;
 import java.util.function.UnaryOperator;

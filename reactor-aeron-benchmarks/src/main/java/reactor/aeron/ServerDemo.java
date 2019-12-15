@@ -2,6 +2,9 @@ package reactor.aeron;
 
 import static reactor.aeron.DefaultFragmentMapper.asString;
 
+import reactor.aeron.mdc.AeronResources;
+import reactor.aeron.mdc.AeronServer;
+
 public class ServerDemo {
 
   /**

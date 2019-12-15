@@ -3,16 +3,12 @@ package reactor.aeron.rsocket.aeron;
 import io.netty.buffer.ByteBufAllocator;
 import io.rsocket.Payload;
 import io.rsocket.RSocket;
-import io.rsocket.RSocketFactory;
-import io.rsocket.frame.decoder.PayloadDecoder;
-import io.rsocket.reactor.aeron.AeronClientTransport;
 import io.rsocket.util.ByteBufPayload;
 import java.util.concurrent.TimeUnit;
 import org.HdrHistogram.Recorder;
-import reactor.aeron.AeronClient;
-import reactor.aeron.AeronResources;
 import reactor.aeron.Configurations;
 import reactor.aeron.LatencyReporter;
+import reactor.aeron.mdc.AeronResources;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 
@@ -41,19 +37,20 @@ public final class RSocketAeronPing {
             .start()
             .block();
 
-    RSocket client =
-        RSocketFactory.connect()
-            .frameDecoder(PayloadDecoder.ZERO_COPY)
-            .transport(
-                () ->
-                    new AeronClientTransport(
-                        AeronClient.create(resources)
-                            .options(
-                                Configurations.MDC_ADDRESS,
-                                Configurations.MDC_PORT,
-                                Configurations.MDC_CONTROL_PORT)))
-            .start()
-            .block();
+    RSocket client = null;
+    // todo io.rsocket.transport.ClientTransport was changed
+    // RSocketFactory.connect()
+    //     .frameDecoder(PayloadDecoder.ZERO_COPY)
+    //     .transport(
+    //         () ->
+    //             new AeronClientTransport(
+    //                 AeronClient.create(resources)
+    //                     .options(
+    //                         Configurations.MDC_ADDRESS,
+    //                         Configurations.MDC_PORT,
+    //                         Configurations.MDC_CONTROL_PORT)))
+    //     .start()
+    //     .block();
 
     Disposable report = latencyReporter.start();
 

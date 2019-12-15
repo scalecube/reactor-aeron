@@ -1,4 +1,4 @@
-package reactor.aeron;
+package reactor.aeron.mdc;
 
 import java.time.Duration;
 import java.util.function.Consumer;

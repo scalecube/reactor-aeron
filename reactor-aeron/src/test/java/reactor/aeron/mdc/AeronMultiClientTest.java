@@ -1,4 +1,4 @@
-package reactor.aeron;
+package reactor.aeron.mdc;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -9,6 +9,12 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import reactor.aeron.BaseAeronTest;
+import reactor.aeron.OnDisposable;
+import reactor.aeron.SocketUtils;
+import reactor.aeron.mdc.AeronClient;
+import reactor.aeron.mdc.AeronResources;
+import reactor.aeron.mdc.AeronServer;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 

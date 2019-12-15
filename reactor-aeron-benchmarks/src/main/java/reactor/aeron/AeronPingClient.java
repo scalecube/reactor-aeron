@@ -8,6 +8,9 @@ import org.agrona.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.console.ContinueBarrier;
+import reactor.aeron.mdc.AeronClient;
+import reactor.aeron.mdc.AeronConnection;
+import reactor.aeron.mdc.AeronResources;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -102,6 +105,7 @@ public final class AeronPingClient {
   }
 
   private static class NanoTimeGeneratorHandler implements DirectBufferHandler<Object> {
+
     private static final UnsafeBuffer OFFER_BUFFER =
         new UnsafeBuffer(
             BufferUtil.allocateDirectAligned(

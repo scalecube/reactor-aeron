@@ -1,4 +1,4 @@
-package reactor.aeron;
+package reactor.aeron.mdc;
 
 import io.aeron.Image;
 import io.aeron.Publication;
@@ -10,6 +10,10 @@ import org.agrona.DirectBuffer;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.aeron.AeronEventLoop;
+import reactor.aeron.DefaultFragmentMapper;
+import reactor.aeron.ImageAgent;
+import reactor.aeron.PublicationAgent;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoProcessor;
 

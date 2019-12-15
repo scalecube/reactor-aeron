@@ -1,4 +1,4 @@
-package reactor.aeron;
+package reactor.aeron.mdc;
 
 import io.aeron.Aeron;
 import io.aeron.ChannelUri;
@@ -22,6 +22,15 @@ import org.agrona.concurrent.BackoffIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.aeron.AeronEventLoop;
+import reactor.aeron.AeronEventLoopGroup;
+import reactor.aeron.AeronInbound;
+import reactor.aeron.AeronOutbound;
+import reactor.aeron.FragmentMapper;
+import reactor.aeron.ImageAgent;
+import reactor.aeron.OnDisposable;
+import reactor.aeron.PublicationAgent;
+import reactor.aeron.SubscriptionAgent;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoProcessor;
 import reactor.core.scheduler.Scheduler;

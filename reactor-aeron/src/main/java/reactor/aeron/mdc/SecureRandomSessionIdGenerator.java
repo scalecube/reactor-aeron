@@ -1,8 +1,9 @@
-package reactor.aeron;
+package reactor.aeron.mdc;
 
 import io.aeron.driver.MediaDriver.Context;
 import java.security.SecureRandom;
 import java.util.function.Supplier;
+import reactor.aeron.mdc.AeronResources;
 
 /**
  * Session id generator (in the range {@code 0..Int.MAX_VALUE}) based on {@link SecureRandom}.
