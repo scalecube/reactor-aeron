@@ -1,6 +1,5 @@
 package reactor.aeron.mdc;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static reactor.aeron.DefaultFragmentMapper.asString;
 
 import java.time.Duration;
@@ -16,10 +15,6 @@ import reactor.aeron.BaseAeronTest;
 import reactor.aeron.OnDisposable;
 import reactor.aeron.SocketUtils;
 import reactor.aeron.ThreadWatcher;
-import reactor.aeron.mdc.AeronClient;
-import reactor.aeron.mdc.AeronConnection;
-import reactor.aeron.mdc.AeronResources;
-import reactor.aeron.mdc.AeronServer;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.ReplayProcessor;
 import reactor.test.StepVerifier;

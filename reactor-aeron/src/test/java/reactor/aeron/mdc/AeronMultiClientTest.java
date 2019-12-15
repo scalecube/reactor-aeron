@@ -12,9 +12,6 @@ import org.junit.jupiter.api.Test;
 import reactor.aeron.BaseAeronTest;
 import reactor.aeron.OnDisposable;
 import reactor.aeron.SocketUtils;
-import reactor.aeron.mdc.AeronClient;
-import reactor.aeron.mdc.AeronResources;
-import reactor.aeron.mdc.AeronServer;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 

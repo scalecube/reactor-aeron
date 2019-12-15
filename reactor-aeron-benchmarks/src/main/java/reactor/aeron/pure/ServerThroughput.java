@@ -75,7 +75,7 @@ public class ServerThroughput {
     SigInt.register(() -> running.set(false));
 
     RateReporter reporter = new RateReporter();
-    
+
     try (Aeron aeron = Aeron.connect(ctx);
         Subscription subscription = aeron.addSubscription(INBOUND_CHANNEL, STREAM_ID);
         Publication publication =
