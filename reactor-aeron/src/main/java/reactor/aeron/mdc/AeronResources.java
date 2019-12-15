@@ -56,6 +56,7 @@ public final class AeronResources implements OnDisposable {
           .errorHandler(th -> logger.warn("Exception occurred on MediaDriver: " + th, th))
           .warnIfDirectoryExists(true)
           .dirDeleteOnStart(true)
+          .dirDeleteOnShutdown(true)
           // low latency settings
           .termBufferSparseFile(false)
           // explicit range of reserved session ids
@@ -525,24 +526,13 @@ public final class AeronResources implements OnDisposable {
   }
 
   private Mono<Void> doDispose() {
-    return Mono.defer(
+    return Mono.fromRunnable(
         () -> {
-          logger.debug("Disposing {}", this);
-
-          return Mono //
-              .fromRunnable(eventLoopGroup::dispose)
-              .then(eventLoopGroup.onDispose())
-              .doFinally(
-                  s -> {
-                    CloseHelper.quietClose(aeron);
-
-                    CloseHelper.quietClose(mediaDriver);
-
-                    Optional.ofNullable(aeronContext)
-                        .ifPresent(c -> IoUtil.delete(c.aeronDirectory(), true));
-
-                    scheduler.dispose();
-                  });
+          CloseHelper.quietClose(eventLoopGroup);
+          CloseHelper.quietClose(aeron);
+          CloseHelper.quietClose(mediaDriver);
+          scheduler.dispose();
+          logger.debug("Disposed {}", this);
         });
   }
 
