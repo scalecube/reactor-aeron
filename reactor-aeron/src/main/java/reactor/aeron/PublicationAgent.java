@@ -1,5 +1,6 @@
 package reactor.aeron;
 
+import io.aeron.ConcurrentPublication;
 import io.aeron.Publication;
 import java.time.Duration;
 import java.util.Objects;
@@ -187,7 +188,78 @@ public final class PublicationAgent implements Agent, AeronOutbound, Disposable 
   @Override
   public <B> AeronOutbound send(
       Publisher<B> dataStream, DirectBufferHandler<? super B> bufferHandler) {
+    if (publication.isClosed()) {
+      return then(Mono.error(new AgentTerminationException("Publication has been closed")));
+    }
+
+    if (dataStream instanceof Mono && publication instanceof ConcurrentPublication) {
+      return then(
+          ((Mono<B>) dataStream)
+              .flatMap(
+                  buffer ->
+                      Mono.<Void>fromRunnable(() -> sendImmediately(buffer, bufferHandler))
+                          .doFinally(s -> bufferHandler.dispose((B) buffer))));
+    }
+
     return then(publish(dataStream, bufferHandler));
+  }
+
+  private <B> void sendImmediately(B buffer, DirectBufferHandler<? super B> bufferHandler) {
+    long start = System.currentTimeMillis();
+    long r;
+
+    while (true) {
+      r = publication.offer(bufferHandler.map(buffer));
+
+      if (r > 0) {
+        return;
+      }
+
+      // Handle closed publication
+      if (r == Publication.CLOSED) {
+        logger.warn("aeron.Publication is CLOSED: {}", this);
+        throw new AgentTerminationException("aeron.Publication is CLOSED");
+      }
+
+      // Handle max position exceeded
+      if (r == Publication.MAX_POSITION_EXCEEDED) {
+        logger.warn("aeron.Publication received MAX_POSITION_EXCEEDED: {}", this);
+        throw new AgentTerminationException("aeron.Publication received MAX_POSITION_EXCEEDED");
+      }
+
+      // Handle failed connection
+      if (r == Publication.NOT_CONNECTED) {
+        if (System.currentTimeMillis() - start > connectTimeout.toMillis()) {
+          logger.warn(
+              "aeron.Publication failed to resolve NOT_CONNECTED within {} ms, {}",
+              connectTimeout.toMillis(),
+              this);
+          throw new AgentTerminationException("Failed to resolve NOT_CONNECTED within timeout");
+        }
+      }
+
+      // Handle backpressure
+      if (r == Publication.BACK_PRESSURED) {
+        if (System.currentTimeMillis() - start > backpressureTimeout.toMillis()) {
+          logger.warn(
+              "aeron.Publication failed to resolve BACK_PRESSURED within {} ms, {}",
+              backpressureTimeout.toMillis(),
+              this);
+          throw new AgentTerminationException("Failed to resolve BACK_PRESSURED within timeout");
+        }
+      }
+
+      // Handle admin action
+      if (r == Publication.ADMIN_ACTION) {
+        if (System.currentTimeMillis() - start > adminActionTimeout.toMillis()) {
+          logger.warn(
+              "aeron.Publication failed to resolve ADMIN_ACTION within {} ms, {}",
+              adminActionTimeout.toMillis(),
+              this);
+          throw new AgentTerminationException("Failed to resolve ADMIN_ACTION within timeout");
+        }
+      }
+    }
   }
 
   private <B> Mono<Void> publish(
