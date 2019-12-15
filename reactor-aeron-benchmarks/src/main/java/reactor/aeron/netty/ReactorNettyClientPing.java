@@ -20,7 +20,6 @@ import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.netty.Connection;
-import reactor.netty.NettyPipeline.SendOptions;
 import reactor.netty.channel.BootstrapHandlers;
 import reactor.netty.resources.ConnectionProvider;
 import reactor.netty.resources.LoopResources;
@@ -98,14 +97,12 @@ public class ReactorNettyClientPing {
 
     connection
         .outbound()
-        .options(SendOptions::flushOnEach)
         .sendObject(Flux.range(0, Configurations.REQUESTED))
         .then()
         .subscribe();
 
     connection
         .outbound()
-        .options(SendOptions::flushOnEach)
         .sendObject(
             connection
                 .inbound()
