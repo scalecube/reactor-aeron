@@ -60,4 +60,9 @@ final class AeronOutboundThen implements AeronOutbound {
   public boolean isDisposed() {
     return source.isDisposed();
   }
+
+  @Override
+  public Mono<Void> onDispose() {
+    return source.onDispose();
+  }
 }

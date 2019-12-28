@@ -6,13 +6,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.aeron.AeronInbound;
 import reactor.aeron.AeronOutbound;
-import reactor.aeron.OnDisposable;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoProcessor;
 
 /**
  * Full-duplex aeron <i>connection</i>. Bound to certain {@code sessionId}. Implements {@link
- * OnDisposable} for convenient resource cleanup.
+ * reactor.aeron.OnDisposable} for convenient resource cleanup.
  */
 final class DuplexAeronConnection<I> implements AeronConnection<I> {
 

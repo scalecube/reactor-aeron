@@ -16,6 +16,8 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.publisher.MonoProcessor;
 import reactor.core.publisher.Operators;
 
 public class SubscriptionAgent<T> implements Agent, AeronInbound<T>, Disposable {
@@ -35,6 +37,7 @@ public class SubscriptionAgent<T> implements Agent, AeronInbound<T>, Disposable 
   private static final int FRAGMENT_LIMIT = 10;
 
   private final FluxReceive inbound = new FluxReceive();
+  private final MonoProcessor<Void> onDispose = MonoProcessor.create();
 
   private final Subscription subscription;
   private final boolean shouldCloseSubscription;
@@ -114,6 +117,7 @@ public class SubscriptionAgent<T> implements Agent, AeronInbound<T>, Disposable 
     if (shouldCloseSubscription) {
       CloseHelper.quietClose(subscription);
     }
+    onDispose.onComplete();
   }
 
   @Override
@@ -137,7 +141,12 @@ public class SubscriptionAgent<T> implements Agent, AeronInbound<T>, Disposable 
 
   @Override
   public boolean isDisposed() {
-    return CANCELLED_SUBSCRIBER.equals(destinationSubscriber);
+    return onDispose.isDisposed();
+  }
+
+  @Override
+  public Mono<Void> onDispose() {
+    return onDispose;
   }
 
   private class AgentFragmentHandler implements ControlledFragmentHandler {

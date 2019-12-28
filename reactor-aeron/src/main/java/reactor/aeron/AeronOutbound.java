@@ -6,11 +6,10 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-public interface AeronOutbound extends Publisher<Void>, Disposable {
+public interface AeronOutbound extends Publisher<Void>, OnDisposable {
 
   /**
    * Send data to the peer, listen for any error on write and close on terminal signal

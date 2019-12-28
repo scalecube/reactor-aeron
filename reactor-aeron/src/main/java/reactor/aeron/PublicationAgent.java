@@ -39,6 +39,7 @@ public final class PublicationAgent implements Agent, AeronOutbound, Disposable 
 
   private volatile Throwable lastError;
 
+  private final MonoProcessor<Void> onDispose = MonoProcessor.create();
   private volatile boolean isDisposed = false;
 
   /**
@@ -167,6 +168,7 @@ public final class PublicationAgent implements Agent, AeronOutbound, Disposable 
     for (PublisherProcessor processor : oldArray) {
       processor.cancelDueTo(throwable);
     }
+    onDispose.onComplete();
   }
 
   @Override
@@ -181,7 +183,7 @@ public final class PublicationAgent implements Agent, AeronOutbound, Disposable 
 
   @Override
   public boolean isDisposed() {
-    return isDisposed;
+    return onDispose.isDisposed();
   }
 
   @Override
@@ -198,6 +200,11 @@ public final class PublicationAgent implements Agent, AeronOutbound, Disposable 
           publisher.subscribe(processor);
           return processor.onDispose();
         });
+  }
+
+  @Override
+  public Mono<Void> onDispose() {
+    return onDispose;
   }
 
   private static class PublisherProcessor<B> extends BaseSubscriber<B> {
@@ -223,7 +230,7 @@ public final class PublicationAgent implements Agent, AeronOutbound, Disposable 
       return onDispose;
     }
 
-    void request() {
+    private void request() {
       if (requested || isDisposed()) {
         return;
       }
@@ -235,7 +242,7 @@ public final class PublicationAgent implements Agent, AeronOutbound, Disposable 
       }
     }
 
-    void reset() {
+    private void reset() {
       resetBuffer();
 
       if (isDisposed()) {
@@ -283,18 +290,18 @@ public final class PublicationAgent implements Agent, AeronOutbound, Disposable 
       }
     }
 
-    long publish(B buffer) {
+    private long publish(B buffer) {
       if (start == 0) {
         start = System.currentTimeMillis();
       }
       return parent.publication.offer(bufferHandler.map(buffer));
     }
 
-    boolean isTimeoutElapsed(Duration timeout) {
+    private boolean isTimeoutElapsed(Duration timeout) {
       return System.currentTimeMillis() - start > timeout.toMillis();
     }
 
-    void cancelDueTo(Throwable throwable) {
+    private void cancelDueTo(Throwable throwable) {
       try {
         cancel();
         resetBuffer();
