@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
+import reactor.aeron.AeronDuplex;
 import reactor.aeron.BaseAeronTest;
 import reactor.aeron.OnDisposable;
 import reactor.aeron.SocketUtils;
@@ -87,7 +88,7 @@ class AeronServerTest extends BaseAeronTest {
     Assertions.assertTrue(new ThreadWatcher().awaitTerminated(5000, "single-", "parallel-"));
   }
 
-  private AeronConnection<DirectBuffer> createConnection() {
+  private AeronDuplex<DirectBuffer> createConnection() {
     return AeronClient.create(resources)
         .options("localhost", serverPort, serverControlPort)
         .connect()
@@ -95,7 +96,7 @@ class AeronServerTest extends BaseAeronTest {
   }
 
   private OnDisposable createServer(
-      Function<? super AeronConnection<DirectBuffer>, ? extends Publisher<Void>> handler) {
+      Function<? super AeronDuplex<DirectBuffer>, ? extends Publisher<Void>> handler) {
     return AeronServer.create(resources)
         .options("localhost", serverPort, serverControlPort)
         .handle(handler)

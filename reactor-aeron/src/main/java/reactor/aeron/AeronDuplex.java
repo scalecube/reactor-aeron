@@ -1,11 +1,7 @@
-package reactor.aeron.mdc;
+package reactor.aeron;
 
 import org.reactivestreams.Subscription;
-import reactor.aeron.AeronInbound;
-import reactor.aeron.AeronOutbound;
-import reactor.aeron.OnDisposable;
 import reactor.core.CoreSubscriber;
-import reactor.core.Disposable;
 import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.SignalType;
 
@@ -16,34 +12,23 @@ import reactor.core.publisher.SignalType;
  * for reading and {@link #outbound()} for writing data. AeronConnection interface comes with {@link
  * OnDisposable} and {@link #disposeSubscriber()} function for convenient resource cleanup.
  */
-public interface AeronConnection<I> extends OnDisposable {
+public interface AeronDuplex<I> extends OnDisposable {
 
   /**
-   * Return the {@link AeronInbound} read API from this connection. If {@link AeronConnection} has
-   * not been configured, receive operations will be unavailable.
+   * Return the {@link AeronInbound} read API from this connection. If {@link AeronDuplex} has not
+   * been configured, receive operations will be unavailable.
    *
    * @return {@code AeronInbound} instance
    */
   AeronInbound<I> inbound();
 
   /**
-   * Return the {@link AeronOutbound} write API from this connection. If {@link AeronConnection} has
-   * not been configured, send operations will be unavailable.
+   * Return the {@link AeronOutbound} write API from this connection. If {@link AeronDuplex} has not
+   * been configured, send operations will be unavailable.
    *
    * @return {@code AeronOutbound} instance
    */
   AeronOutbound outbound();
-
-  /**
-   * Assign a {@link Disposable} to be invoked when the channel is closed.
-   *
-   * @param onDispose the close event handler
-   * @return {@code this} instance
-   */
-  default AeronConnection onDispose(Disposable onDispose) {
-    onDispose().doOnTerminate(onDispose::dispose).subscribe();
-    return this;
-  }
 
   /**
    * Return a {@link CoreSubscriber} that will dispose on complete or error.

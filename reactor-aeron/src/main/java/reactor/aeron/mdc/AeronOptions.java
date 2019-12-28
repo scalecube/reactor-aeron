@@ -6,6 +6,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
 import org.reactivestreams.Publisher;
+import reactor.aeron.AeronDuplex;
 
 /**
  * Immutable wrapper around options for full-duplex aeron <i>connection</i> between client and
@@ -15,7 +16,7 @@ import org.reactivestreams.Publisher;
 public final class AeronOptions {
 
   private AeronResources resources;
-  private Function<? super AeronConnection<DirectBuffer>, ? extends Publisher<Void>> handler;
+  private Function<? super AeronDuplex<DirectBuffer>, ? extends Publisher<Void>> handler;
   private AeronChannelUriString inboundUri = new AeronChannelUriString();
   private AeronChannelUriString outboundUri = new AeronChannelUriString();
   private Duration connectTimeout = Duration.ofSeconds(5);
@@ -46,12 +47,12 @@ public final class AeronOptions {
     return set(s -> s.resources = resources);
   }
 
-  public Function<? super AeronConnection<DirectBuffer>, ? extends Publisher<Void>> handler() {
+  public Function<? super AeronDuplex<DirectBuffer>, ? extends Publisher<Void>> handler() {
     return handler;
   }
 
   public AeronOptions handler(
-      Function<? super AeronConnection<DirectBuffer>, ? extends Publisher<Void>> handler) {
+      Function<? super AeronDuplex<DirectBuffer>, ? extends Publisher<Void>> handler) {
     return set(s -> s.handler = handler);
   }
 

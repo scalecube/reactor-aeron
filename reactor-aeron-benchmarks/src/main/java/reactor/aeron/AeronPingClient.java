@@ -9,7 +9,6 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.console.ContinueBarrier;
 import reactor.aeron.mdc.AeronClient;
-import reactor.aeron.mdc.AeronConnection;
 import reactor.aeron.mdc.AeronResources;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
@@ -36,7 +35,7 @@ public final class AeronPingClient {
             .start()
             .block();
 
-    AeronConnection<DirectBuffer> connection =
+    AeronDuplex<DirectBuffer> connection =
         AeronClient.create(resources)
             .options(
                 Configurations.MDC_ADDRESS,
@@ -74,7 +73,7 @@ public final class AeronPingClient {
     connection.onDispose(resources).onDispose().block();
   }
 
-  private static void roundTripMessages(AeronConnection<DirectBuffer> connection, long count) {
+  private static void roundTripMessages(AeronDuplex<DirectBuffer> connection, long count) {
     HISTOGRAM.reset();
 
     Disposable disp = reporter.start();

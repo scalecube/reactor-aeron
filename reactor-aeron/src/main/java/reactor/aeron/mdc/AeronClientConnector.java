@@ -7,10 +7,13 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.Agent;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.aeron.AeronDuplex;
 import reactor.aeron.AeronEventLoop;
+import reactor.aeron.DefaultAeronDuplex;
 import reactor.aeron.DefaultFragmentMapper;
 import reactor.aeron.ImageAgent;
 import reactor.aeron.PublicationAgent;
@@ -34,7 +37,7 @@ final class AeronClientConnector {
 
   private final AeronOptions options;
   private final AeronResources resources;
-  private final Function<? super AeronConnection<DirectBuffer>, ? extends Publisher<Void>> handler;
+  private final Function<? super AeronDuplex<DirectBuffer>, ? extends Publisher<Void>> handler;
   private final DefaultFragmentMapper mapper = new DefaultFragmentMapper();
 
   AeronClientConnector(AeronOptions options) {
@@ -44,11 +47,11 @@ final class AeronClientConnector {
   }
 
   /**
-   * Creates and setting up {@link AeronConnection} object and everyting around it.
+   * Creates and setting up {@link AeronDuplex} object and everyting around it.
    *
    * @return mono result
    */
-  Mono<AeronConnection<DirectBuffer>> start() {
+  Mono<AeronDuplex<DirectBuffer>> start() {
     return Mono.defer(
         () -> {
           return tryConnect()
@@ -66,8 +69,6 @@ final class AeronClientConnector {
                         Integer.toHexString(sessionId),
                         inboundChannel);
 
-                    // setup cleanup hook to use it onwards
-                    MonoProcessor<Void> disposeHook = MonoProcessor.create();
                     // setup image avaiable hook
                     MonoProcessor<Image> inboundAvailable = MonoProcessor.create();
 
@@ -84,7 +85,6 @@ final class AeronClientConnector {
                               logger.debug(
                                   "{}: client inbound became unavaliable",
                                   Integer.toHexString(sessionId));
-                              disposeHook.onComplete();
                             })
                         .doOnError(
                             th -> {
@@ -95,11 +95,28 @@ final class AeronClientConnector {
                               // dispose outbound resource
                               CloseHelper.quietClose(publication);
                             })
-                        .flatMap(
-                            subscription ->
-                                inboundAvailable.flatMap(
-                                    image ->
-                                        newConnection(sessionId, image, publication, disposeHook)))
+                        .flatMap(subscription -> inboundAvailable)
+                        .map(
+                            image -> {
+                              PublicationAgent outbound = new PublicationAgent(publication);
+                              ImageAgent<DirectBuffer> inbound =
+                                  new ImageAgent<>(image, mapper, true);
+                              return new DefaultAeronDuplex<>(inbound, outbound);
+                            })
+                        .doOnSuccess(
+                            connection -> {
+                              if (handler == null) {
+                                logger.warn(
+                                    "{}: connection handler function is not specified",
+                                    Integer.toHexString(sessionId));
+                              } else if (!connection.isDisposed()) {
+                                handler.apply(connection).subscribe(connection.disposeSubscriber());
+                              }
+
+                              AeronEventLoop eventLoop = resources.nextEventLoop();
+                              eventLoop.register((Agent) connection.inbound());
+                              eventLoop.register((Agent) connection.outbound());
+                            })
                         .doOnSuccess(
                             connection ->
                                 logger.debug(
@@ -108,23 +125,6 @@ final class AeronClientConnector {
                                     inboundChannel));
                   });
         });
-  }
-
-  private Mono<AeronConnection<DirectBuffer>> newConnection(
-      int sessionId, Image image, Publication publication, MonoProcessor<Void> disposeHook) {
-    PublicationAgent publicationAgent = new PublicationAgent(publication);
-    ImageAgent<DirectBuffer> imageAgent = new ImageAgent<>(image, mapper, true);
-    DuplexAeronConnection<DirectBuffer> connection =
-        new DuplexAeronConnection<>(sessionId, imageAgent, publicationAgent, disposeHook);
-    return connection
-        .start(handler)
-        .doOnSuccess(
-            c -> {
-              AeronEventLoop eventLoop = resources.nextEventLoop();
-              eventLoop.register(imageAgent);
-              eventLoop.register(publicationAgent);
-            })
-        .doOnError(ex -> connection.dispose());
   }
 
   private Mono<Publication> tryConnect() {

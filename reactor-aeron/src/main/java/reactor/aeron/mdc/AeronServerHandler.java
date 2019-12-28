@@ -1,19 +1,19 @@
 package reactor.aeron.mdc;
 
 import io.aeron.Image;
-import io.aeron.Publication;
 import io.aeron.Subscription;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.Agent;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.aeron.AeronDuplex;
 import reactor.aeron.AeronEventLoop;
+import reactor.aeron.DefaultAeronDuplex;
 import reactor.aeron.DefaultFragmentMapper;
 import reactor.aeron.ImageAgent;
 import reactor.aeron.OnDisposable;
@@ -41,13 +41,13 @@ final class AeronServerHandler implements OnDisposable {
 
   private final AeronOptions options;
   private final AeronResources resources;
-  private final Function<? super AeronConnection<DirectBuffer>, ? extends Publisher<Void>> handler;
+  private final Function<? super AeronDuplex<DirectBuffer>, ? extends Publisher<Void>>
+      handler;
   private final DefaultFragmentMapper mapper = new DefaultFragmentMapper();
 
-  //  private volatile MessageSubscription acceptorSubscription; // server acceptor subscription
   private volatile Subscription acceptorSubscription; // server acceptor subscription
 
-  private final Map<Integer, MonoProcessor<Void>> disposeHooks = new ConcurrentHashMap<>();
+  private final Map<Integer, OnDisposable> connections = new ConcurrentHashMap<>();
 
   private final MonoProcessor<Void> dispose = MonoProcessor.create();
   private final MonoProcessor<Void> onDispose = MonoProcessor.create();
@@ -88,10 +88,10 @@ final class AeronServerHandler implements OnDisposable {
   }
 
   /**
-   * Setting up new {@link AeronConnection} identified by {@link Image#sessionId()}. Specifically
-   * creates Multi Destination Cast (MDC) message publication (aeron {@link io.aeron.Publication}
-   * underneath) with control-endpoint, control-mode and XOR-ed image sessionId. Essentially creates
-   * <i>server-side-individual-MDC</i>.
+   * Setting up new {@link AeronDuplex} identified by {@link Image#sessionId()}.
+   * Specifically creates Multi Destination Cast (MDC) message publication (aeron {@link
+   * io.aeron.Publication} underneath) with control-endpoint, control-mode and XOR-ed image
+   * sessionId. Essentially creates <i>server-side-individual-MDC</i>.
    *
    * @param image source image
    */
@@ -106,7 +106,28 @@ final class AeronServerHandler implements OnDisposable {
 
     resources
         .publication(outboundChannel, STREAM_ID)
-        .flatMap(publication -> newConnection(sessionId, publication, image))
+        .map(
+            publication -> {
+              PublicationAgent outbound = new PublicationAgent(publication);
+              ImageAgent<DirectBuffer> inbound = new ImageAgent<>(image, mapper, false);
+              return new DefaultAeronDuplex<>(inbound, outbound);
+            })
+        .doOnSuccess(
+            connection -> {
+              if (handler == null) {
+                logger.warn(
+                    "{}: connection handler function is not specified",
+                    Integer.toHexString(sessionId));
+              } else if (!connection.isDisposed()) {
+                handler.apply(connection).subscribe(connection.disposeSubscriber());
+              }
+
+              AeronEventLoop eventLoop = resources.nextEventLoop();
+              eventLoop.register((Agent) connection.inbound());
+              eventLoop.register((Agent) connection.outbound());
+              connections.put(sessionId, connection);
+              connection.onDispose(() -> connections.remove(sessionId));
+            })
         .doOnSuccess(
             connection ->
                 logger.debug(
@@ -122,46 +143,13 @@ final class AeronServerHandler implements OnDisposable {
                     ex.toString()));
   }
 
-  private Mono<? extends AeronConnection> newConnection(
-      int sessionId, Publication publication, Image image) {
-    // setup cleanup hook to use it onwards
-    MonoProcessor<Void> disposeHook = MonoProcessor.create();
-
-    PublicationAgent publicationAgent = new PublicationAgent(publication);
-    ImageAgent<DirectBuffer> imageAgent = new ImageAgent<>(image, mapper, false);
-
-    DuplexAeronConnection<DirectBuffer> connection =
-        new DuplexAeronConnection<>(sessionId, imageAgent, publicationAgent, disposeHook);
-
-    disposeHooks.put(sessionId, disposeHook);
-
-    return connection
-        .start(handler)
-        .doOnSuccess(
-            c -> {
-              AeronEventLoop eventLoop = resources.nextEventLoop();
-              eventLoop.register(imageAgent);
-              eventLoop.register(publicationAgent);
-            })
-        .doOnError(
-            ex -> {
-              connection.dispose();
-              disposeHooks.remove(sessionId);
-            });
-  }
-
   /**
-   * Disposes {@link AeronConnection} corresponding to {@link Image#sessionId()}.
+   * Disposes {@link AeronDuplex} corresponding to {@link Image#sessionId()}.
    *
    * @param image source image
    */
   private void onImageUnavailable(Image image) {
-    int sessionId = image.sessionId();
-    MonoProcessor<Void> disposeHook = disposeHooks.remove(sessionId);
-    if (disposeHook != null) {
-      logger.debug("{}: server inbound became unavailable", Integer.toHexString(sessionId));
-      disposeHook.onComplete();
-    }
+    logger.debug("{}: server inbound became unavailable", Integer.toHexString(image.sessionId()));
   }
 
   @Override
@@ -180,18 +168,13 @@ final class AeronServerHandler implements OnDisposable {
   }
 
   private Mono<Void> doDispose() {
-    return Mono.defer(
+    return Mono.fromRunnable(
         () -> {
           logger.debug("Disposing {}", this);
-          List<Mono<Void>> monos = new ArrayList<>();
-
           // dispose server acceptor subscription
-          monos.add(Mono.fromRunnable(() -> CloseHelper.quietClose(acceptorSubscription)));
-
+          CloseHelper.quietClose(acceptorSubscription);
           // dispose all existing connections
-          disposeHooks.values().stream().peek(MonoProcessor::onComplete).forEach(monos::add);
-
-          return Mono.whenDelayError(monos).doFinally(s -> disposeHooks.clear());
+          connections.forEach((sessionId, connection) -> connection.dispose());
         });
   }
 

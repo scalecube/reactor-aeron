@@ -4,6 +4,7 @@ import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import org.agrona.DirectBuffer;
 import org.reactivestreams.Publisher;
+import reactor.aeron.AeronDuplex;
 import reactor.aeron.OnDisposable;
 import reactor.core.publisher.Mono;
 
@@ -92,7 +93,7 @@ public final class AeronServer {
    * @return new {@code AeronServer} with handler
    */
   public AeronServer handle(
-      Function<? super AeronConnection<DirectBuffer>, ? extends Publisher<Void>> handler) {
+      Function<? super AeronDuplex<DirectBuffer>, ? extends Publisher<Void>> handler) {
     return new AeronServer(options.handler(handler));
   }
 }
