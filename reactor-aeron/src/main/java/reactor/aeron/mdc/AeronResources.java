@@ -8,8 +8,6 @@ import io.aeron.Image;
 import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.driver.MediaDriver;
-import java.io.File;
-import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.UUID;
@@ -312,10 +310,6 @@ public final class AeronResources implements OnDisposable {
           eventLoopGroup =
               new AeronEventLoopGroup("reactor-aeron", numOfWorkers, workerIdleStrategySupplier);
 
-          Runtime.getRuntime()
-              .addShutdownHook(
-                  new Thread(() -> deleteAeronDirectory(mediaDriver.aeronDirectoryName())));
-
           logger.debug(
               "{} has initialized embedded media driver, aeron directory: {}",
               this,
@@ -534,14 +528,6 @@ public final class AeronResources implements OnDisposable {
           scheduler.dispose();
           logger.debug("Disposed {}", this);
         });
-  }
-
-  private void deleteAeronDirectory(String aeronDirectoryName) {
-    File aeronDirectory = Paths.get(aeronDirectoryName).toFile();
-    if (aeronDirectory.exists()) {
-      IoUtil.delete(aeronDirectory, true);
-      logger.debug("{} deleted aeron directory {}", this, aeronDirectoryName);
-    }
   }
 
   @Override
