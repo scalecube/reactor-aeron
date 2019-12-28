@@ -1,9 +1,9 @@
 package reactor.aeron;
 
 import io.aeron.Aeron;
+import io.aeron.ControlledFragmentAssembler;
 import io.aeron.Image;
-import io.aeron.ImageFragmentAssembler;
-import io.aeron.logbuffer.FragmentHandler;
+import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -42,8 +42,8 @@ public class ImageAgent<T> implements Agent, AeronInbound<T>, Disposable {
   private final long stopPosition;
 
   private final FragmentMapper<T> mapper;
-  private final FragmentHandler fragmentHandler =
-      new ImageFragmentAssembler(new AgentFragmentHandler());
+  private final ControlledFragmentHandler fragmentHandler =
+      new ControlledFragmentAssembler(new AgentFragmentHandler());
 
   private volatile long requested;
   private volatile boolean fastPath;
@@ -115,12 +115,12 @@ public class ImageAgent<T> implements Agent, AeronInbound<T>, Disposable {
       throw new AgentTerminationException("Image is closed");
     }
     if (fastPath) {
-      return image.poll(fragmentHandler, FRAGMENT_LIMIT);
+      return image.controlledPoll(fragmentHandler, FRAGMENT_LIMIT);
     }
     int r = (int) Math.min(requested, FRAGMENT_LIMIT);
     int fragments = 0;
     if (r > 0) {
-      fragments = image.poll(fragmentHandler, r);
+      fragments = image.controlledPoll(fragmentHandler, r);
       if (produced > 0) {
         Operators.produced(REQUESTED, this, produced);
         produced = 0;
@@ -162,22 +162,25 @@ public class ImageAgent<T> implements Agent, AeronInbound<T>, Disposable {
     return CANCELLED_SUBSCRIBER.equals(destinationSubscriber);
   }
 
-  private class AgentFragmentHandler implements FragmentHandler {
+  private class AgentFragmentHandler implements ControlledFragmentHandler {
 
     @Override
-    public void onFragment(DirectBuffer buffer, int offset, int length, Header header) {
+    public Action onFragment(DirectBuffer buffer, int offset, int length, Header header) {
       try {
-        if (ex == null) {
-          T t = mapper.apply(buffer, offset, length, header);
-          if (t != null) {
-            produced++;
-            CoreSubscriber<T> destination = ImageAgent.this.destinationSubscriber;
-            destination.onNext(t);
-          }
+        CoreSubscriber<T> destination = ImageAgent.this.destinationSubscriber;
+        if (CANCELLED_SUBSCRIBER.equals(destination)) {
+          return Action.ABORT;
+        }
+        T t = mapper.apply(buffer, offset, length, header);
+        if (t != null) {
+          destination.onNext(t);
+          produced++;
         }
       } catch (Exception e) {
         ex = e;
+        return Action.ABORT;
       }
+      return Action.CONTINUE;
     }
   }
 
