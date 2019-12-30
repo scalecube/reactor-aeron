@@ -8,6 +8,8 @@ import org.agrona.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.console.ContinueBarrier;
+import reactor.aeron.mdc.AeronClient;
+import reactor.aeron.mdc.AeronResources;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -33,7 +35,7 @@ public final class AeronPingClient {
             .start()
             .block();
 
-    AeronConnection connection =
+    AeronDuplex<DirectBuffer> connection =
         AeronClient.create(resources)
             .options(
                 Configurations.MDC_ADDRESS,
@@ -71,7 +73,7 @@ public final class AeronPingClient {
     connection.onDispose(resources).onDispose().block();
   }
 
-  private static void roundTripMessages(AeronConnection connection, long count) {
+  private static void roundTripMessages(AeronDuplex<DirectBuffer> connection, long count) {
     HISTOGRAM.reset();
 
     Disposable disp = reporter.start();
@@ -102,23 +104,16 @@ public final class AeronPingClient {
   }
 
   private static class NanoTimeGeneratorHandler implements DirectBufferHandler<Object> {
+
     private static final UnsafeBuffer OFFER_BUFFER =
         new UnsafeBuffer(
             BufferUtil.allocateDirectAligned(
                 Configurations.MESSAGE_LENGTH, BitUtil.CACHE_LINE_LENGTH));
 
     @Override
-    public int estimateLength(Object ignore) {
-      return Configurations.MESSAGE_LENGTH;
-    }
-
-    @Override
-    public DirectBuffer map(Object ignore, int length) {
+    public DirectBuffer map(Object ignore) {
       OFFER_BUFFER.putLong(0, System.nanoTime());
       return OFFER_BUFFER;
     }
-
-    @Override
-    public void dispose(Object ignore) {}
   }
 }

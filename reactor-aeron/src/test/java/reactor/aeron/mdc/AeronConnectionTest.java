@@ -1,8 +1,9 @@
-package reactor.aeron;
+package reactor.aeron.mdc;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static reactor.aeron.DefaultFragmentMapper.asString;
 
 import java.nio.ByteBuffer;
 import java.time.Duration;
@@ -15,6 +16,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
+import reactor.aeron.AeronDuplex;
+import reactor.aeron.BaseAeronTest;
+import reactor.aeron.OnDisposable;
+import reactor.aeron.SocketUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.ReplayProcessor;
@@ -66,7 +71,7 @@ public class AeronConnectionTest extends BaseAeronTest {
           return connection.onDispose();
         });
 
-    AeronConnection connection = createConnection();
+    AeronDuplex connection = createConnection();
     connection
         .outbound()
         .sendString(
@@ -81,7 +86,7 @@ public class AeronConnectionTest extends BaseAeronTest {
 
     connection.dispose();
 
-    latch.await(IMAGE_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
+    latch.await(IMAGE_TIMEOUT.multipliedBy(2).toMillis(), TimeUnit.MILLISECONDS);
 
     assertEquals(0, latch.getCount());
   }
@@ -101,18 +106,18 @@ public class AeronConnectionTest extends BaseAeronTest {
 
     ReplayProcessor<String> processor = ReplayProcessor.create();
 
-    AeronConnection connection = createConnection();
+    AeronDuplex<DirectBuffer> connection = createConnection();
 
     CountDownLatch latch = new CountDownLatch(1);
-    connection.onDispose().doOnSuccess(aVoid -> latch.countDown()).subscribe();
+    connection.onDispose(latch::countDown);
 
-    connection.inbound().receive().asString().log("client").subscribe(processor);
+    connection.inbound().receive().map(asString()).log("client").subscribe(processor);
 
     processor.take(1).blockLast(Duration.ofSeconds(4));
 
     server.dispose();
 
-    latch.await(IMAGE_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
+    latch.await(IMAGE_TIMEOUT.multipliedBy(2).toMillis(), TimeUnit.MILLISECONDS);
 
     assertEquals(0, latch.getCount());
   }
@@ -123,9 +128,9 @@ public class AeronConnectionTest extends BaseAeronTest {
 
     CountDownLatch clientConnectionLatch = new CountDownLatch(1);
 
-    AeronConnection client = createConnection();
+    AeronDuplex client = createConnection();
 
-    client.onDispose().doFinally(s -> clientConnectionLatch.countDown()).subscribe();
+    client.onDispose(clientConnectionLatch::countDown);
 
     Mono //
         .delay(Duration.ofSeconds(1))
@@ -142,7 +147,7 @@ public class AeronConnectionTest extends BaseAeronTest {
 
     CountDownLatch clientConnectionLatch = new CountDownLatch(2);
 
-    AeronConnection client = createConnection();
+    AeronDuplex<DirectBuffer> client = createConnection();
 
     client
         .inbound() //
@@ -176,7 +181,7 @@ public class AeronConnectionTest extends BaseAeronTest {
 
     createServer(c -> c.onDispose().doFinally(s -> serverConnectionLatch.countDown()));
 
-    AeronConnection client = createConnection();
+    AeronDuplex client = createConnection();
 
     Mono //
         .delay(Duration.ofSeconds(1))
@@ -210,7 +215,7 @@ public class AeronConnectionTest extends BaseAeronTest {
           return c.onDispose();
         });
 
-    AeronConnection client = createConnection();
+    AeronDuplex client = createConnection();
 
     Mono //
         .delay(Duration.ofSeconds(1))
@@ -221,7 +226,7 @@ public class AeronConnectionTest extends BaseAeronTest {
     assertTrue(await, "serverConnectionLatch: " + serverConnectionLatch.getCount());
   }
 
-  private AeronConnection createConnection() {
+  private AeronDuplex<DirectBuffer> createConnection() {
     return AeronClient.create(resources)
         .options("localhost", serverPort, serverControlPort)
         .connect()
@@ -229,7 +234,7 @@ public class AeronConnectionTest extends BaseAeronTest {
   }
 
   private OnDisposable createServer(
-      Function<? super AeronConnection, ? extends Publisher<Void>> handler) {
+      Function<? super AeronDuplex<DirectBuffer>, ? extends Publisher<Void>> handler) {
     return AeronServer.create(resources)
         .options("localhost", serverPort, serverControlPort)
         .handle(handler)

@@ -1,15 +1,21 @@
-package reactor.aeron;
+package reactor.aeron.mdc;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static reactor.aeron.DefaultFragmentMapper.asString;
 
 import java.time.Duration;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.agrona.DirectBuffer;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
+import reactor.aeron.AeronDuplex;
+import reactor.aeron.BaseAeronTest;
+import reactor.aeron.OnDisposable;
+import reactor.aeron.SocketUtils;
+import reactor.aeron.ThreadWatcher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.ReplayProcessor;
 import reactor.test.StepVerifier;
@@ -41,7 +47,7 @@ class AeronServerTest extends BaseAeronTest {
 
     createServer(
         connection -> {
-          connection.inbound().receive().asString().log("receive").subscribe(processor);
+          connection.inbound().receive().map(asString()).log("receive").subscribe(processor);
           return connection.onDispose();
         });
 
@@ -79,10 +85,10 @@ class AeronServerTest extends BaseAeronTest {
 
     server.dispose();
 
-    assertTrue(new ThreadWatcher().awaitTerminated(5000, "single-", "parallel-"));
+    Assertions.assertTrue(new ThreadWatcher().awaitTerminated(5000, "single-", "parallel-"));
   }
 
-  private AeronConnection createConnection() {
+  private AeronDuplex<DirectBuffer> createConnection() {
     return AeronClient.create(resources)
         .options("localhost", serverPort, serverControlPort)
         .connect()
@@ -90,7 +96,7 @@ class AeronServerTest extends BaseAeronTest {
   }
 
   private OnDisposable createServer(
-      Function<? super AeronConnection, ? extends Publisher<Void>> handler) {
+      Function<? super AeronDuplex<DirectBuffer>, ? extends Publisher<Void>> handler) {
     return AeronServer.create(resources)
         .options("localhost", serverPort, serverControlPort)
         .handle(handler)

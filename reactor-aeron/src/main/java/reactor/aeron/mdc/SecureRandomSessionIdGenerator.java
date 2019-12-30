@@ -1,4 +1,4 @@
-package reactor.aeron;
+package reactor.aeron.mdc;
 
 import io.aeron.driver.MediaDriver.Context;
 import java.security.SecureRandom;

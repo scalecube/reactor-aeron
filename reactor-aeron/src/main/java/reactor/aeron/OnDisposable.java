@@ -18,8 +18,8 @@ public interface OnDisposable extends Disposable {
    * @param onDispose the close event handler
    * @return this
    */
-  default OnDisposable onDispose(Disposable onDispose) {
+  default <T extends OnDisposable> T onDispose(Disposable onDispose) {
     onDispose().subscribe(null, e -> onDispose.dispose(), onDispose::dispose);
-    return this;
+    return (T) this;
   }
 }

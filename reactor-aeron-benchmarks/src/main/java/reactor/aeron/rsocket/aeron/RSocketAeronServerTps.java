@@ -2,18 +2,9 @@ package reactor.aeron.rsocket.aeron;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
-import io.rsocket.AbstractRSocket;
-import io.rsocket.Payload;
-import io.rsocket.RSocketFactory;
-import io.rsocket.frame.decoder.PayloadDecoder;
-import io.rsocket.reactor.aeron.AeronServerTransport;
-import io.rsocket.util.ByteBufPayload;
 import java.util.Random;
-import reactor.aeron.AeronResources;
-import reactor.aeron.AeronServer;
 import reactor.aeron.Configurations;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
+import reactor.aeron.mdc.AeronResources;
 
 public final class RSocketAeronServerTps {
 
@@ -45,36 +36,37 @@ public final class RSocketAeronServerTps {
             .start()
             .block();
 
-    RSocketFactory.receive()
-        .frameDecoder(PayloadDecoder.ZERO_COPY)
-        .acceptor(
-            (setupPayload, rsocket) ->
-                Mono.just(
-                    new AbstractRSocket() {
-                      @Override
-                      public Flux<Payload> requestStream(Payload payload) {
-                        payload.release();
+    // todo io.rsocket.transport.ServerTransport was changed
+    // RSocketFactory.receive()
+    //     .frameDecoder(PayloadDecoder.ZERO_COPY)
+    //     .acceptor(
+    //         (setupPayload, rsocket) ->
+    //             Mono.just(
+    //                 new AbstractRSocket() {
+    //                   @Override
+    //                   public Flux<Payload> requestStream(Payload payload) {
+    //                     payload.release();
 
-                        long msgNum = Configurations.NUMBER_OF_MESSAGES;
-                        System.out.println("streaming " + msgNum + " messages ...");
+    //                     long msgNum = Configurations.NUMBER_OF_MESSAGES;
+    //                     System.out.println("streaming " + msgNum + " messages ...");
 
-                        return Flux.range(0, Integer.MAX_VALUE)
-                            .map(i -> ByteBufPayload.create(BUFFER.retainedSlice()));
-                      }
-                    }))
-        .transport(
-            new AeronServerTransport(
-                AeronServer.create(resources)
-                    .options(
-                        Configurations.MDC_ADDRESS,
-                        Configurations.MDC_PORT,
-                        Configurations.MDC_CONTROL_PORT)))
-        .start()
-        .block()
-        .onClose()
-        .doFinally(s -> resources.dispose())
-        .then(resources.onDispose())
-        .block();
+    //                     return Flux.range(0, Integer.MAX_VALUE)
+    //                         .map(i -> ByteBufPayload.create(BUFFER.retainedSlice()));
+    //                   }
+    //                 }))
+    //     .transport(
+    //         new AeronServerTransport(
+    //             AeronServer.create(resources)
+    //                 .options(
+    //                     Configurations.MDC_ADDRESS,
+    //                     Configurations.MDC_PORT,
+    //                     Configurations.MDC_CONTROL_PORT)))
+    //     .start()
+    //     .block()
+    //     .onClose()
+    //     .doFinally(s -> resources.dispose())
+    //     .then(resources.onDispose())
+    //     .block();
   }
 
   private static void printSettings() {

@@ -1,6 +1,8 @@
 package reactor.aeron;
 
-public interface AeronInbound {
+import reactor.core.publisher.Flux;
 
-  DirectBufferFlux receive();
+public interface AeronInbound<T> extends OnDisposable {
+
+  Flux<T> receive();
 }

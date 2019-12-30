@@ -2,11 +2,12 @@ package reactor.aeron;
 
 import org.agrona.DirectBuffer;
 
+@FunctionalInterface
 public interface DirectBufferHandler<B> {
 
-  int estimateLength(B buffer);
+  DirectBuffer map(B buffer);
 
-  DirectBuffer map(B buffer, int length);
-
-  void dispose(B buffer);
+  default void dispose(B buffer) {
+    // no-op
+  }
 }

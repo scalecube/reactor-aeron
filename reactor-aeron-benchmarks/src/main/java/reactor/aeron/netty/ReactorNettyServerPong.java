@@ -6,7 +6,6 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 import reactor.aeron.Configurations;
-import reactor.netty.NettyPipeline.SendOptions;
 import reactor.netty.channel.BootstrapHandlers;
 import reactor.netty.resources.LoopResources;
 import reactor.netty.tcp.TcpServer;
@@ -49,7 +48,7 @@ public class ReactorNettyServerPong {
                     }))
         .handle(
             (inbound, outbound) ->
-                outbound.options(SendOptions::flushOnEach).send(inbound.receive().retain()))
+                outbound.send(inbound.receive().retain()))
         .bind()
         .doOnSuccess(
             server ->

@@ -6,6 +6,8 @@ import java.nio.charset.Charset;
 import java.time.Duration;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import reactor.aeron.mdc.AeronResources;
+import reactor.aeron.mdc.AeronServer;
 import reactor.core.publisher.Flux;
 
 public class ServerServerSends {
@@ -44,13 +46,8 @@ public class ServerServerSends {
     static final ByteBufHandler defaultInstance = new ByteBufHandler();
 
     @Override
-    public int estimateLength(ByteBuf buffer) {
-      return buffer.readableBytes();
-    }
-
-    @Override
-    public DirectBuffer map(ByteBuf buffer, int length) {
-      return new UnsafeBuffer(buffer.nioBuffer(), 0, length);
+    public DirectBuffer map(ByteBuf buffer) {
+      return new UnsafeBuffer(buffer.nioBuffer(), 0, buffer.readableBytes());
     }
 
     @Override

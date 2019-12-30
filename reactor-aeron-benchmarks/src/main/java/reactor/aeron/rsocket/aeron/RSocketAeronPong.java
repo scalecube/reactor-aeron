@@ -1,14 +1,7 @@
 package reactor.aeron.rsocket.aeron;
 
-import io.rsocket.AbstractRSocket;
-import io.rsocket.Payload;
-import io.rsocket.RSocketFactory;
-import io.rsocket.frame.decoder.PayloadDecoder;
-import io.rsocket.reactor.aeron.AeronServerTransport;
-import reactor.aeron.AeronResources;
-import reactor.aeron.AeronServer;
 import reactor.aeron.Configurations;
-import reactor.core.publisher.Mono;
+import reactor.aeron.mdc.AeronResources;
 
 public final class RSocketAeronPong {
 
@@ -29,30 +22,31 @@ public final class RSocketAeronPong {
             .start()
             .block();
 
-    RSocketFactory.receive()
-        .frameDecoder(PayloadDecoder.ZERO_COPY)
-        .acceptor(
-            (setupPayload, rsocket) ->
-                Mono.just(
-                    new AbstractRSocket() {
-                      @Override
-                      public Mono<Payload> requestResponse(Payload payload) {
-                        return Mono.just(payload);
-                      }
-                    }))
-        .transport(
-            new AeronServerTransport(
-                AeronServer.create(resources)
-                    .options(
-                        Configurations.MDC_ADDRESS,
-                        Configurations.MDC_PORT,
-                        Configurations.MDC_CONTROL_PORT)))
-        .start()
-        .block()
-        .onClose()
-        .doFinally(s -> resources.dispose())
-        .then(resources.onDispose())
-        .block();
+    // todo io.rsocket.transport.ServerTransport was changed
+    // RSocketFactory.receive()
+    //     .frameDecoder(PayloadDecoder.ZERO_COPY)
+    //     .acceptor(
+    //         (setupPayload, rsocket) ->
+    //             Mono.just(
+    //                 new AbstractRSocket() {
+    //                   @Override
+    //                   public Mono<Payload> requestResponse(Payload payload) {
+    //                     return Mono.just(payload);
+    //                   }
+    //                 }))
+    //     .transport(
+    //         new AeronServerTransport(
+    //             AeronServer.create(resources)
+    //                 .options(
+    //                     Configurations.MDC_ADDRESS,
+    //                     Configurations.MDC_PORT,
+    //                     Configurations.MDC_CONTROL_PORT)))
+    //     .start()
+    //     .block()
+    //     .onClose()
+    //     .doFinally(s -> resources.dispose())
+    //     .then(resources.onDispose())
+    //     .block();
   }
 
   private static void printSettings() {

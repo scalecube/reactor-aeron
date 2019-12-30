@@ -1,6 +1,7 @@
-package reactor.aeron;
+package reactor.aeron.mdc;
 
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static reactor.aeron.DefaultFragmentMapper.asString;
 
 import io.aeron.driver.Configuration;
 import java.time.Duration;
@@ -11,6 +12,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import org.agrona.DirectBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,6 +20,10 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.aeron.AeronDuplex;
+import reactor.aeron.BaseAeronTest;
+import reactor.aeron.OnDisposable;
+import reactor.aeron.SocketUtils;
 import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
@@ -60,8 +66,8 @@ class AeronClientTest extends BaseAeronTest {
                 .sendString(Flux.fromStream(Stream.of("hello1", "2", "3")).log("server"))
                 .then(connection.onDispose()));
 
-    AeronConnection connection = createConnection();
-    StepVerifier.create(connection.inbound().receive().asString().log("client"))
+    AeronDuplex<DirectBuffer> connection = createConnection();
+    StepVerifier.create(connection.inbound().receive().map(asString()).log("client"))
         .expectNext("hello1", "2", "3")
         .expectNoEvent(Duration.ofMillis(10))
         .thenCancel()
@@ -81,9 +87,9 @@ class AeronClientTest extends BaseAeronTest {
                 .sendString(Flux.fromStream(Stream.of(str, str, str)).log("server"))
                 .then(connection.onDispose()));
 
-    AeronConnection connection = createConnection();
+    AeronDuplex<DirectBuffer> connection = createConnection();
 
-    StepVerifier.create(connection.inbound().receive().asString().log("client"))
+    StepVerifier.create(connection.inbound().receive().map(asString()).log("client"))
         .expectNext(str, str, str)
         .expectNoEvent(Duration.ofMillis(10))
         .thenCancel()
@@ -99,16 +105,16 @@ class AeronClientTest extends BaseAeronTest {
                 .sendString(Flux.fromStream(Stream.of("1", "2", "3")).log("server"))
                 .then(connection.onDispose()));
 
-    AeronConnection connection1 = createConnection();
-    AeronConnection connection2 = createConnection();
+    AeronDuplex<DirectBuffer> connection1 = createConnection();
+    AeronDuplex<DirectBuffer> connection2 = createConnection();
 
-    StepVerifier.create(connection1.inbound().receive().asString().log("client-1"))
+    StepVerifier.create(connection1.inbound().receive().map(asString()).log("client-1"))
         .expectNext("1", "2", "3")
         .expectNoEvent(Duration.ofMillis(100))
         .thenCancel()
         .verify();
 
-    StepVerifier.create(connection2.inbound().receive().asString().log("client-2"))
+    StepVerifier.create(connection2.inbound().receive().map(asString()).log("client-2"))
         .expectNext("1", "2", "3")
         .expectNoEvent(Duration.ofMillis(100))
         .thenCancel()
@@ -123,9 +129,9 @@ class AeronClientTest extends BaseAeronTest {
     createServer(
         connection -> connection.outbound().sendString(payloads).then(connection.onDispose()));
 
-    AeronConnection connection1 = createConnection();
+    AeronDuplex<DirectBuffer> connection1 = createConnection();
 
-    StepVerifier.create(connection1.inbound().receive().asString())
+    StepVerifier.create(connection1.inbound().receive().map(asString()))
         .expectNextCount(count)
         .expectNoEvent(Duration.ofMillis(100))
         .thenCancel()
@@ -139,14 +145,14 @@ class AeronClientTest extends BaseAeronTest {
         connection ->
             connection
                 .outbound()
-                .send(connection.inbound().receive())
+                .send(connection.inbound().receive().cast(DirectBuffer.class))
                 .then(connection.onDispose()));
 
-    AeronConnection connection1 = createConnection();
+    AeronDuplex<DirectBuffer> connection1 = createConnection();
 
     connection1.outbound().sendString(Flux.range(0, count).map(String::valueOf)).then().subscribe();
 
-    StepVerifier.create(connection1.inbound().receive().asString())
+    StepVerifier.create(connection1.inbound().receive().map(asString()))
         .expectNextCount(count)
         .expectNoEvent(Duration.ofMillis(100))
         .thenCancel()
@@ -161,10 +167,11 @@ class AeronClientTest extends BaseAeronTest {
             connection
                 .inbound()
                 .receive()
+                .cast(DirectBuffer.class)
                 .flatMap(byteBuffer -> connection.outbound().send(Mono.just(byteBuffer)).then())
                 .then(connection.onDispose()));
 
-    AeronConnection connection1 = createConnection();
+    AeronDuplex<DirectBuffer> connection1 = createConnection();
 
     Flux.range(0, count)
         .flatMap(
@@ -176,7 +183,7 @@ class AeronClientTest extends BaseAeronTest {
         .then()
         .subscribe();
 
-    StepVerifier.create(connection1.inbound().receive().asString())
+    StepVerifier.create(connection1.inbound().receive().map(asString()))
         .expectNextCount(count)
         .expectNoEvent(Duration.ofMillis(100))
         .thenCancel()
@@ -191,6 +198,7 @@ class AeronClientTest extends BaseAeronTest {
             connection
                 .inbound()
                 .receive()
+                .cast(DirectBuffer.class)
                 .flatMap(byteBuffer -> connection.outbound().send(Mono.just(byteBuffer)).then())
                 .then(connection.onDispose()));
 
@@ -199,7 +207,7 @@ class AeronClientTest extends BaseAeronTest {
 
     createConnection(
         connection -> {
-          connection.inbound().receive().asString().subscribe(processor1);
+          connection.inbound().receive().map(asString()).subscribe(processor1);
           Flux.range(0, count)
               .flatMap(
                   i -> connection.outbound().sendString(Mono.just("client-1 send:" + i)).then())
@@ -210,7 +218,7 @@ class AeronClientTest extends BaseAeronTest {
 
     createConnection(
         connection -> {
-          connection.inbound().receive().asString().subscribe(processor2);
+          connection.inbound().receive().map(asString()).subscribe(processor2);
           Flux.range(0, count)
               .flatMap(
                   i -> connection.outbound().sendString(Mono.just("client-2 send:" + i)).then())
@@ -235,16 +243,17 @@ class AeronClientTest extends BaseAeronTest {
             connection
                 .inbound()
                 .receive()
+                .cast(DirectBuffer.class)
                 .flatMap(byteBuffer -> connection.outbound().send(Mono.just(byteBuffer)).then())
                 .then(connection.onDispose()));
 
-    AeronConnection connection1 = createConnection();
+    AeronDuplex<DirectBuffer> connection1 = createConnection();
     Flux.range(0, count)
         .flatMap(i -> connection1.outbound().sendString(Mono.just("client-1 send:" + i)).then())
         .then()
         .subscribe(null, ex -> logger.error("client-1 didn't send all, cause: ", ex));
 
-    AeronConnection connection2 = createConnection();
+    AeronDuplex<DirectBuffer> connection2 = createConnection();
     Flux.range(0, count)
         .flatMap(i -> connection2.outbound().sendString(Mono.just("client-2 send:" + i)).then())
         .then()
@@ -257,13 +266,13 @@ class AeronClientTest extends BaseAeronTest {
                         connection1
                             .inbound()
                             .receive()
-                            .asString()
+                            .map(asString())
                             .take(count)
                             .filter(response -> !response.startsWith("client-1 ")),
                         connection2
                             .inbound()
                             .receive()
-                            .asString()
+                            .map(asString())
                             .take(count)
                             .filter(response -> !response.startsWith("client-2 ")))))
         .expectComplete()
@@ -284,13 +293,13 @@ class AeronClientTest extends BaseAeronTest {
 
     createConnection(
         connection -> {
-          connection.inbound().receive().asString().log("client-1").subscribe(processor1);
+          connection.inbound().receive().map(asString()).log("client-1").subscribe(processor1);
           return connection.onDispose();
         });
 
     createConnection(
         connection -> {
-          connection.inbound().receive().asString().log("client-2").subscribe(processor2);
+          connection.inbound().receive().map(asString()).log("client-2").subscribe(processor2);
           return connection.onDispose();
         });
 
@@ -320,7 +329,7 @@ class AeronClientTest extends BaseAeronTest {
             connection
                 .inbound()
                 .receive()
-                .asString()
+                .map(asString())
                 .doOnNext(clientRequests::onNext)
                 // .log("server receive ")
                 .then(connection.onDispose()));
@@ -374,7 +383,7 @@ class AeronClientTest extends BaseAeronTest {
           return connection.onDispose();
         });
 
-    AeronConnection connection1 = createConnection();
+    AeronDuplex<DirectBuffer> connection1 = createConnection();
 
     BaseSubscriber<String> subscriber =
         new BaseSubscriber<String>() {
@@ -397,7 +406,7 @@ class AeronClientTest extends BaseAeronTest {
     connection1
         .inbound()
         .receive()
-        .asString()
+        .map(asString())
         .take(overall)
         .doOnNext(processor::onNext)
         .subscribe(subscriber);
@@ -437,7 +446,7 @@ class AeronClientTest extends BaseAeronTest {
           return connection.onDispose();
         });
 
-    AeronConnection connection1 = createConnection();
+    AeronDuplex<DirectBuffer> connection1 = createConnection();
 
     BaseSubscriber<String> subscriber =
         new BaseSubscriber<String>() {
@@ -460,7 +469,7 @@ class AeronClientTest extends BaseAeronTest {
     connection1
         .inbound()
         .receive()
-        .asString()
+        .map(asString())
         .take(overall)
         .doOnNext(processor::onNext)
         .subscribe(subscriber);
@@ -474,12 +483,12 @@ class AeronClientTest extends BaseAeronTest {
         .verify(timeout);
   }
 
-  private AeronConnection createConnection() {
+  private AeronDuplex<DirectBuffer> createConnection() {
     return createConnection(null /*handler*/);
   }
 
-  private AeronConnection createConnection(
-      Function<? super AeronConnection, ? extends Publisher<Void>> handler) {
+  private AeronDuplex<DirectBuffer> createConnection(
+      Function<? super AeronDuplex<DirectBuffer>, ? extends Publisher<Void>> handler) {
     return AeronClient.create(resources)
         .options("localhost", serverPort, serverControlPort)
         .handle(handler)
@@ -488,7 +497,7 @@ class AeronClientTest extends BaseAeronTest {
   }
 
   private OnDisposable createServer(
-      Function<? super AeronConnection, ? extends Publisher<Void>> handler) {
+      Function<? super AeronDuplex<DirectBuffer>, ? extends Publisher<Void>> handler) {
     return AeronServer.create(resources)
         .options("localhost", serverPort, serverControlPort)
         .handle(handler)

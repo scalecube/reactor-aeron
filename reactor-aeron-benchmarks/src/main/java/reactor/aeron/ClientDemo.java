@@ -1,6 +1,8 @@
 package reactor.aeron;
 
 import java.util.stream.Stream;
+import reactor.aeron.mdc.AeronClient;
+import reactor.aeron.mdc.AeronResources;
 import reactor.core.publisher.Flux;
 
 public class ClientDemo {

@@ -5,8 +5,8 @@
   <modelVersion>4.0.0</modelVersion>
 
   <properties>
-    <netty.version>4.1.33.Final</netty.version>
-    <rsocket.version>0.12.2-RC2</rsocket.version>
+    <netty.version>4.1.37.Final</netty.version>
+    <rsocket.version>1.0.0-RC5</rsocket.version>
     <rsocket-transport-aeron.version>0.1.12</rsocket-transport-aeron.version>
     <hdrhistogram.version>2.1.10</hdrhistogram.version>
     <jmh.version>1.21</jmh.version>
@@ -16,10 +16,23 @@
   <parent>
     <groupId>io.scalecube</groupId>
     <artifactId>reactor-aeron-parent</artifactId>
-    <version>0.1.5-SNAPSHOT</version>
+    <version>0.2.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>reactor-aeron-benchmarks</artifactId>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-bom</artifactId>
+        <version>${netty.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+
+  </dependencyManagement>
 
   <dependencies>
     <dependency>
@@ -66,44 +79,12 @@
 
     <dependency>
       <groupId>io.netty</groupId>
-      <artifactId>netty-common</artifactId>
-      <version>${netty.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.netty</groupId>
       <artifactId>netty-buffer</artifactId>
-      <version>${netty.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-codec</artifactId>
-      <version>${netty.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-codec-http</artifactId>
-      <version>${netty.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-handler</artifactId>
-      <version>${netty.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-handler-proxy</artifactId>
-      <version>${netty.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-transport</artifactId>
-      <version>${netty.version}</version>
     </dependency>
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-transport-native-epoll</artifactId>
       <classifier>linux-x86_64</classifier>
-      <version>${netty.version}</version>
     </dependency>
 
     <dependency>

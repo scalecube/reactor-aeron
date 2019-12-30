@@ -3,6 +3,8 @@ package reactor.aeron;
 import org.agrona.BitUtil;
 import org.agrona.BufferUtil;
 import org.agrona.concurrent.UnsafeBuffer;
+import reactor.aeron.mdc.AeronClient;
+import reactor.aeron.mdc.AeronResources;
 import reactor.core.publisher.Flux;
 
 public class ClientThroughput {
