@@ -9,7 +9,7 @@
 
 
   <artifactId>reactor-aeron-parent</artifactId>
-  <version>0.2.1-RC-2</version>
+  <version>0.2.1-RC-3-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>ScaleCube/scalecube-reactor-aeron</name>
@@ -19,7 +19,7 @@
     <connection>scm:git:git@github.com:scalecube/reactor-aeron.git</connection>
     <developerConnection>scm:git:git@github.com:scalecube/reactor-aeron.git
     </developerConnection>
-    <tag>v0.2.1-RC-2</tag>
+    <tag>HEAD</tag>
   </scm>
 
   <properties>
