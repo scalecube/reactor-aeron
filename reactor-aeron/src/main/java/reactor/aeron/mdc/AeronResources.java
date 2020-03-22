@@ -171,7 +171,6 @@ public final class AeronResources implements OnDisposable {
         .publicationConnectionTimeoutNs(mdc.publicationConnectionTimeoutNs())
         .performStorageChecks(mdc.performStorageChecks())
         .nanoClock(mdc.nanoClock())
-        .lossReport(mdc.lossReport())
         .ipcTermBufferLength(mdc.ipcTermBufferLength())
         .ipcMtuLength(mdc.ipcMtuLength())
         .initialWindowLength(mdc.initialWindowLength())
