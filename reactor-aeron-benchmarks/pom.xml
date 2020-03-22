@@ -5,9 +5,9 @@
   <properties>
     <netty.version>4.1.37.Final</netty.version>
     <rsocket.version>1.0.0-RC5</rsocket.version>
-    <rsocket-transport-aeron.version>0.1.12</rsocket-transport-aeron.version>
-    <hdrhistogram.version>2.1.10</hdrhistogram.version>
-    <jmh.version>1.21</jmh.version>
+    <rsocket-transport-aeron.version>0.1.13</rsocket-transport-aeron.version>
+    <hdrhistogram.version>2.1.12</hdrhistogram.version>
+    <jmh.version>1.23</jmh.version>
     <trace-reporter.version>0.0.9</trace-reporter.version>
   </properties>
 
