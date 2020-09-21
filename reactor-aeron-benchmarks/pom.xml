@@ -13,7 +13,7 @@
   <parent>
     <groupId>io.scalecube</groupId>
     <artifactId>reactor-aeron-parent</artifactId>
-    <version>0.1.5</version>
+    <version>0.1.6-SNAPSHOT</version>
   </parent>
 
   <artifactId>reactor-aeron-benchmarks</artifactId>
