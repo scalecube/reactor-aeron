@@ -1,23 +1,42 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
     <groupId>io.scalecube</groupId>
     <artifactId>scalecube-parent-pom</artifactId>
-    <version>0.0.19</version>
+    <version>0.2.17</version>
   </parent>
-
 
   <artifactId>reactor-aeron-parent</artifactId>
   <version>0.1.5-SNAPSHOT</version>
   <packaging>pom</packaging>
+  <name>ScaleCube/ReactorAeron</name>
 
-  <name>ScaleCube/scalecube-reactor-aeron</name>
+  <repositories>
+    <repository>
+      <id>github</id>
+      <name>GitHub Packages</name>
+      <url>https://maven.pkg.github.com/scalecube/packages</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+  </repositories>
+
+  <distributionManagement>
+    <repository>
+      <id>github</id>
+      <name>GitHub Packages</name>
+      <url>https://maven.pkg.github.com/scalecube/reactor-aeron</url>
+    </repository>
+  </distributionManagement>
 
   <scm>
     <url>https://github.com/scalecube/scalecube</url>
-    <connection>scm:git:git@github.com:scalecube/reactor-aeron.git</connection>
-    <developerConnection>scm:git:git@github.com:scalecube/reactor-aeron.git
+    <connection>scm:git:https://github.com/scalecube/reactor-aeron.git</connection>
+    <developerConnection>scm:git:https://github.com/scalecube/reactor-aeron.git
     </developerConnection>
     <tag>HEAD</tag>
   </scm>
