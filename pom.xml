@@ -37,6 +37,7 @@
 
   <modules>
     <module>reactor-aeron</module>
+    <module>reactor-aeron-archive</module>
     <module>reactor-aeron-benchmarks</module>
   </modules>
 
@@ -51,6 +52,11 @@
       <dependency>
         <groupId>io.aeron</groupId>
         <artifactId>aeron-client</artifactId>
+        <version>${aeron.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.aeron</groupId>
+        <artifactId>aeron-archive</artifactId>
         <version>${aeron.version}</version>
       </dependency>
 

@@ -38,6 +38,11 @@
       <artifactId>reactor-aeron</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>io.scalecube</groupId>
+      <artifactId>reactor-aeron-archive</artifactId>
+      <version>${project.version}</version>
+    </dependency>
 
     <dependency>
       <groupId>io.scalecube</groupId>
